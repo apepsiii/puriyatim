@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Admin - Panti Asuhan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981', // Emerald 500
+                        primary_dark: '#059669', // Emerald 600
+                        primary_light: '#d1fae5', // Emerald 100
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <!-- Login Container -->
+    <div class="w-full max-w-md">
+        
+        <!-- Logo & Branding -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 mb-4 shadow-sm border border-emerald-200">
+                <i class="fas fa-hand-holding-heart text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Admin<span class="text-primary">Panel</span></h1>
+            <p class="text-sm text-gray-500 mt-1">Sistem Manajemen Panti Asuhan Peduli Ummat</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+            <div class="p-6 sm:p-8">
+                
+                <h2 class="text-xl font-bold text-gray-800 mb-6">Masuk ke Akun Anda</h2>
+
+                <!-- Form -->
+                <form action="dashboard_admin.html" method="GET" class="space-y-5">
+                    
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">Alamat Email</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                                <i class="far fa-envelope"></i>
+                            </div>
+                            <input type="email" id="email" name="email" required placeholder="admin@panti.com" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full pl-10 p-3 outline-none transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="password" class="block text-sm font-medium text-gray-700">Kata Sandi</label>
+                            <a href="#" class="text-xs font-medium text-primary hover:text-primary_dark transition-colors">Lupa sandi?</a>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <input type="password" id="password" name="password" required placeholder="••••••••" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full pl-10 pr-10 p-3 outline-none transition-colors">
+                            <!-- Toggle Password Visibility -->
+                            <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
+                                <i id="eye-icon" class="far fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="flex items-center">
+                        <input id="remember" type="checkbox" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer">
+                        <label for="remember" class="ml-2 text-sm font-medium text-gray-600 cursor-pointer">Ingat saya di perangkat ini</label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full text-white bg-primary hover:bg-primary_dark focus:ring-4 focus:ring-emerald-200 font-semibold rounded-xl text-sm px-5 py-3.5 text-center transition-colors shadow-lg shadow-emerald-200 flex justify-center items-center gap-2 mt-2">
+                        <span>Masuk Dashboard</span>
+                        <i class="fas fa-sign-in-alt text-sm"></i>
+                    </button>
+
+                </form>
+            </div>
+            
+            <!-- Card Footer / Alert -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 text-center">
+                <p class="text-xs text-gray-500">
+                    <i class="fas fa-shield-alt text-gray-400 mr-1"></i> Akses terbatas hanya untuk pengurus resmi lembaga.
+                </p>
+            </div>
+        </div>
+
+        <!-- Back to Public Web -->
+        <div class="text-center mt-8">
+            <a href="index.html" class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+                Kembali ke Web Publik
+            </a>
+        </div>
+
+    </div>
+
+    <!-- JavaScript for Toggle Password -->
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>

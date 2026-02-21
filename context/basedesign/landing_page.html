@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panti Asuhan Peduli Ummat</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        /* Hide scrollbar for horizontal scroll areas */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981', // Emerald 500 (Adaptasi dari warna hijau tosca di gambar)
+                        primary_light: '#d1fae5',
+                        primary_dark: '#059669',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="flex justify-center min-h-screen">
+
+    <!-- Mobile App Container -->
+    <div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl overflow-x-hidden pb-24">
+        
+        <!-- Header Section -->
+        <header class="pt-6 px-5 pb-2 flex justify-between items-center bg-white sticky top-0 z-30">
+            <!-- Location Pill -->
+            <div class="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-100">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Kel. Mulyaharja, Bogor</span>
+            </div>
+            <!-- Login/Profile Icon -->
+            <a href="dashboard_admin.html" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
+                <i class="fas fa-user-circle text-xl"></i>
+            </a>
+        </header>
+
+        <main class="px-5 mt-4">
+            
+            <!-- Search & Filter Bar -->
+            <div class="flex gap-3 items-center mb-6">
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" class="w-full bg-gray-50 text-gray-800 text-sm rounded-2xl pl-11 pr-10 py-3.5 outline-none focus:ring-2 focus:ring-primary border border-transparent transition-all placeholder-gray-400 font-medium" placeholder="Cari program donasi...">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-4 text-emerald-500 cursor-pointer">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                </div>
+                <button class="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-emerald-200 transition-transform active:scale-95 flex-shrink-0">
+                    <i class="fas fa-sliders-h"></i>
+                </button>
+            </div>
+
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-3xl p-5 relative overflow-hidden mb-8 border border-emerald-100/50">
+                <div class="w-2/3 relative z-10">
+                    <h2 class="text-lg font-bold text-gray-900 leading-tight mb-2">Salurkan Sedekah & Zakat Anda</h2>
+                    <p class="text-xs text-gray-600 mb-4 leading-relaxed">Bantu penuhi kebutuhan pendidikan dan gizi anak-anak asuh kami.</p>
+                    <p class="text-xs font-bold text-emerald-600 mb-3">Transparan & Amanah</p>
+                    <button class="bg-primary hover:bg-primary_dark text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-md transition-colors w-fit">
+                        Donasi Sekarang
+                    </button>
+                </div>
+                
+                <!-- Illustration (Placeholder using FontAwesome/CSS since we can't load external specific SVGs) -->
+                <div class="absolute -right-4 -bottom-4 w-40 h-40 bg-emerald-200/50 rounded-full blur-2xl z-0"></div>
+                <div class="absolute right-2 bottom-4 z-10 text-emerald-600 opacity-90">
+                    <!-- Using a generic icon as placeholder for the 3D character in the reference -->
+                    <i class="fas fa-box-open text-6xl drop-shadow-lg transform -rotate-12"></i>
+                </div>
+
+                <!-- Carousel Dots -->
+                <div class="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-20">
+                    <div class="w-4 h-1.5 rounded-full bg-primary"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-200"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-200"></div>
+                </div>
+            </div>
+
+            <!-- Categories Section -->
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-th-large text-gray-800"></i> Program Utama
+                    </h3>
+                    <a href="#" class="text-sm font-semibold text-primary hover:underline">Lihat Semua</a>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Category 1 -->
+                    <a href="jumat_berkah_form.html" class="flex flex-col items-center gap-2 group">
+                        <div class="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 text-2xl group-active:scale-95 transition-transform shadow-sm border border-blue-100/50">
+                            <i class="fas fa-hand-holding-heart"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Jumat<br>Berkah</span>
+                    </a>
+                    
+                    <!-- Category 2 -->
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500 text-2xl group-active:scale-95 transition-transform shadow-sm border border-emerald-100/50">
+                            <i class="fas fa-child"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Bantu<br>Yatim</span>
+                    </a>
+
+                    <!-- Category 3 -->
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 text-2xl group-active:scale-95 transition-transform shadow-sm border border-rose-100/50">
+                            <i class="fas fa-mosque"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Zakat<br>Mal</span>
+                    </a>
+
+                    <!-- Category 4 -->
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 text-2xl group-active:scale-95 transition-transform shadow-sm border border-amber-100/50">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Laporan<br>Dana</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Transparency Widget (New Addition for MVP) -->
+            <div class="mb-8 bg-gray-50 rounded-3xl p-4 border border-gray-100">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Transparansi Keuangan Bulan Ini</p>
+                    <i class="fas fa-info-circle text-gray-400"></i>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-500 mb-0.5">Donasi Masuk</p>
+                        <p class="text-sm font-bold text-emerald-600">Rp 5.200.000</p>
+                    </div>
+                    <div class="w-px bg-gray-200"></div>
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-500 mb-0.5">Telah Disalurkan</p>
+                        <p class="text-sm font-bold text-red-500">Rp 2.150.000</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended / Latest News Section -->
+            <div>
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-newspaper text-gray-800"></i> Berita Terbaru
+                    </h3>
+                    <a href="#" class="text-sm font-semibold text-primary hover:underline">Lihat Semua</a>
+                </div>
+                
+                <!-- Horizontal Scrollable Container -->
+                <div class="flex overflow-x-auto hide-scrollbar gap-4 pb-4 snap-x">
+                    
+                    <!-- Card 1 -->
+                    <div class="min-w-[160px] max-w-[160px] bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col snap-start relative pb-3">
+                        <!-- Heart Icon (Like) -->
+                        <div class="absolute top-3 right-3 w-7 h-7 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center z-10 text-gray-400 hover:text-red-500 cursor-pointer">
+                            <i class="fas fa-heart text-sm"></i>
+                        </div>
+                        
+                        <!-- Image Area -->
+                        <div class="h-32 bg-gray-100 relative w-full overflow-hidden">
+                            <div class="absolute inset-0 flex items-center justify-center text-gray-300">
+                                <i class="fas fa-image text-3xl"></i>
+                            </div>
+                            <!-- Mockup label in center -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded">KEGIATAN</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Text Area -->
+                        <div class="px-3 pt-3 flex-1 flex flex-col">
+                            <h4 class="text-sm font-bold text-gray-900 line-clamp-2 leading-tight">Penyaluran Sembako Februari</h4>
+                            <p class="text-xs text-gray-500 mt-1 mb-2">20 Feb 2026</p>
+                            <button class="mt-auto w-full border border-primary text-primary hover:bg-emerald-50 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                Baca Detail
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="min-w-[160px] max-w-[160px] bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col snap-start relative pb-3">
+                        <div class="absolute top-3 right-3 w-7 h-7 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center z-10 text-red-500 cursor-pointer">
+                            <i class="fas fa-heart text-sm"></i>
+                        </div>
+                        
+                        <div class="h-32 bg-gray-100 relative w-full overflow-hidden">
+                            <div class="absolute inset-0 flex items-center justify-center text-gray-300">
+                                <i class="fas fa-image text-3xl"></i>
+                            </div>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded">PRESTASI</span>
+                            </div>
+                        </div>
+                        
+                        <div class="px-3 pt-3 flex-1 flex flex-col">
+                            <h4 class="text-sm font-bold text-gray-900 line-clamp-2 leading-tight">Budi Juara 1 Lomba MTQ</h4>
+                            <p class="text-xs text-gray-500 mt-1 mb-2">15 Feb 2026</p>
+                            <button class="mt-auto w-full border border-primary text-primary hover:bg-emerald-50 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                Baca Detail
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="min-w-[160px] max-w-[160px] bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col snap-start relative pb-3">
+                        <div class="absolute top-3 right-3 w-7 h-7 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center z-10 text-gray-400 cursor-pointer">
+                            <i class="fas fa-heart text-sm"></i>
+                        </div>
+                        
+                        <div class="h-32 bg-gray-100 relative w-full overflow-hidden">
+                            <div class="absolute inset-0 flex items-center justify-center text-gray-300">
+                                <i class="fas fa-image text-3xl"></i>
+                            </div>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded">INFO</span>
+                            </div>
+                        </div>
+                        
+                        <div class="px-3 pt-3 flex-1 flex flex-col">
+                            <h4 class="text-sm font-bold text-gray-900 line-clamp-2 leading-tight">Pendaftaran Jumat Berkah Dibuka</h4>
+                            <p class="text-xs text-gray-500 mt-1 mb-2">10 Feb 2026</p>
+                            <button class="mt-auto w-full border border-primary text-primary hover:bg-emerald-50 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                Baca Detail
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <!-- Placed absolute at bottom of the max-w-md container to simulate app layout on desktop viewing -->
+        <nav class="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-3 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-40">
+            <div class="flex justify-between items-center">
+                <!-- Nav Item 1 (Active) -->
+                <a href="#" class="flex flex-col items-center gap-1 text-primary group">
+                    <div class="relative">
+                        <i class="fas fa-home text-xl"></i>
+                        <!-- Active Indicator Dot -->
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full border border-white"></div>
+                    </div>
+                    <span class="text-[10px] font-bold">Beranda</span>
+                </a>
+                
+                <!-- Nav Item 2 -->
+                <a href="#" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="fas fa-newspaper text-xl"></i>
+                    <span class="text-[10px] font-medium">Berita</span>
+                </a>
+
+                <!-- Nav Item 3 (Center Action Button) -->
+                <a href="jumat_berkah_form.html" class="flex flex-col items-center gap-1 -mt-5">
+                    <div class="w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 border-4 border-white transition-transform active:scale-95">
+                        <i class="fas fa-hand-holding-heart text-2xl"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-primary">Jumat Berkah</span>
+                </a>
+
+                <!-- Nav Item 4 -->
+                <a href="#" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="fas fa-chart-bar text-xl"></i>
+                    <span class="text-[10px] font-medium">Laporan</span>
+                </a>
+
+                <!-- Nav Item 5 -->
+                <a href="dashboard_admin.html" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="far fa-user text-xl"></i>
+                    <span class="text-[10px] font-medium">Profil</span>
+                </a>
+            </div>
+        </nav>
+
+    </div>
+
+</body>
+</html>
