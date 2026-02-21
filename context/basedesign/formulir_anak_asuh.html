@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Anak Asuh - Admin Panel</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981', // Emerald 500
+                        primary_dark: '#059669', // Emerald 600
+                        primary_light: '#d1fae5', // Emerald 100
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <!-- Mobile overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar (Sama dengan halaman sebelumnya) -->
+    <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="bg-primary text-white p-1.5 rounded-lg mr-3">
+                <i class="fas fa-hand-holding-heart text-lg"></i>
+            </div>
+            <span class="text-lg font-bold text-gray-800 tracking-tight">Admin<span class="text-primary">Panel</span></span>
+            <button class="ml-auto lg:hidden text-gray-500 hover:text-gray-800" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <a href="dashboard_admin.html" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-home w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Dashboard
+            </a>
+            
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Modul Utama</p>
+            <a href="data_anak.html" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium">
+                <i class="fas fa-users w-5 mr-3 text-primary"></i> Data Anak Asuh
+            </a>
+            <a href="#" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-wallet w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Keuangan & Kas
+            </a>
+            <a href="#" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors flex justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Jumat Berkah
+                </div>
+                <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">5</span>
+            </a>
+
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Web & Publikasi</p>
+            <a href="#" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Artikel & Kegiatan
+            </a>
+            <a href="#" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <!-- Topbar -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 lg:hidden mr-4" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <nav class="hidden sm:flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm text-gray-500">
+                        <li class="inline-flex items-center">
+                            <a href="dashboard_admin.html" class="hover:text-gray-900"><i class="fas fa-home mr-2"></i>Home</a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <a href="data_anak.html" class="ml-1 hover:text-gray-900 font-medium">Data Anak Asuh</a>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <span class="ml-1 text-primary font-medium">Tambah Data Baru</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            
+            <!-- Page Header -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Formulir Anak Asuh</h2>
+                <p class="text-sm text-gray-500 mt-1">Lengkapi data di bawah ini dengan benar untuk pendaftaran anak asuh baru.</p>
+            </div>
+
+            <!-- Form Form -->
+            <form action="#" method="POST" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden max-w-5xl">
+                
+                <!-- Section 1: Identitas Pribadi -->
+                <div class="p-6 sm:p-8 border-b border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-id-card text-primary mr-2"></i> Identitas Pribadi
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">NIK (Nomor Induk Kependudukan) <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
+                            <input type="text" name="nik" placeholder="Masukkan 16 digit NIK jika ada" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap <span class="text-red-500">*</span></label>
+                            <input type="text" name="nama_lengkap" required placeholder="Sesuai Akta Kelahiran/KK" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Panggilan <span class="text-red-500">*</span></label>
+                            <input type="text" name="nama_panggilan" required placeholder="Nama panggilan sehari-hari" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tempat Lahir</label>
+                            <input type="text" name="tempat_lahir" placeholder="Contoh: Bogor" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir <span class="text-red-500">*</span></label>
+                            <input type="date" name="tanggal_lahir" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin <span class="text-red-500">*</span></label>
+                            <select name="jenis_kelamin" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                                <option value="" selected disabled>Pilih Jenis Kelamin...</option>
+                                <option value="L">Laki-laki</option>
+                                <option value="P">Perempuan</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Domisili -->
+                <div class="p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-map-marker-alt text-primary mr-2"></i> Alamat & Domisili
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jalan / Kampung <span class="text-red-500">*</span></label>
+                            <input type="text" name="alamat_jalan" required placeholder="Contoh: Jl. Raya Ciawi No. 10 atau Kp. Babakan" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">RT <span class="text-red-500">*</span></label>
+                            <input type="text" name="rt" required placeholder="Contoh: 01" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">RW <span class="text-red-500">*</span></label>
+                            <select name="rw" required class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                                <option value="" selected disabled>Pilih RW...</option>
+                                <option value="01">RW 01</option>
+                                <option value="02">RW 02</option>
+                                <option value="03">RW 03</option>
+                                <!-- ... -->
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Desa/Kelurahan <span class="text-red-500">*</span></label>
+                            <input type="text" name="desa_kelurahan" required placeholder="Contoh: Mulyaharja" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kecamatan <span class="text-red-500">*</span></label>
+                            <input type="text" name="kecamatan" required placeholder="Contoh: Bogor Selatan" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Status & Wali -->
+                <div class="p-6 sm:p-8 border-b border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-users-cog text-primary mr-2"></i> Status Panti & Wali
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status Anak Asuh <span class="text-red-500">*</span></label>
+                            <select name="status_anak" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                                <option value="" selected disabled>Pilih Status...</option>
+                                <option value="yatim">Yatim (Ayah Meninggal)</option>
+                                <option value="piatu">Piatu (Ibu Meninggal)</option>
+                                <option value="yatim_piatu">Yatim Piatu</option>
+                                <option value="dhuafa">Dhuafa (Kurang Mampu)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Bergabung <span class="text-red-500">*</span></label>
+                            <input type="date" name="tanggal_masuk" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div class="md:col-span-2 pt-2 border-t border-gray-100 mt-2">
+                            <p class="text-sm font-semibold text-gray-800 mb-3">Informasi Wali / Penanggung Jawab</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Wali <span class="text-red-500">*</span></label>
+                            <input type="text" name="nama_wali" required placeholder="Nama ibu/paman/nenek" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Hubungan dengan Anak <span class="text-red-500">*</span></label>
+                            <input type="text" name="hubungan_wali" required placeholder="Contoh: Ibu Kandung, Nenek, Paman" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Kontak / WhatsApp</label>
+                            <input type="tel" name="kontak_wali" placeholder="08xxxxxxxxxx" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Pendidikan & Kesehatan -->
+                <div class="p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap text-primary mr-2"></i> Pendidikan & Kesehatan
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jenjang Pendidikan</label>
+                            <select name="jenjang_pendidikan" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                                <option value="">Belum Sekolah</option>
+                                <option value="TK/PAUD">TK/PAUD</option>
+                                <option value="SD">SD/MI</option>
+                                <option value="SMP">SMP/MTs</option>
+                                <option value="SMA/SMK">SMA/SMK/MA</option>
+                                <option value="Lulus">Lulus/Putus Sekolah</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Sekolah</label>
+                            <input type="text" name="nama_sekolah" placeholder="Contoh: SDN 01 Mulyaharja" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                            <input type="text" name="kelas" placeholder="Contoh: 5 B" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kondisi Kesehatan / Alergi</label>
+                            <input type="text" name="kondisi_kesehatan" placeholder="Opsional. Contoh: Asma, Alergi makanan laut" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Khusus</label>
+                            <textarea name="catatan_khusus" rows="3" placeholder="Prestasi anak, karakter, atau catatan penting lainnya untuk donatur..." class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors resize-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Foto Upload Section -->
+                <div class="p-6 sm:p-8 border-b border-gray-100">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Foto Profil Anak (Opsional)</label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-20 h-20 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
+                            <i class="fas fa-camera text-xl mb-1"></i>
+                        </div>
+                        <div>
+                            <button type="button" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                                Pilih Foto...
+                            </button>
+                            <p class="text-xs text-gray-500 mt-2">Format JPG/PNG maksimal 2MB.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="p-6 bg-gray-50 flex items-center justify-end gap-3">
+                    <a href="data_anak.html" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 transition-colors">
+                        Batal
+                    </a>
+                    <button type="submit" class="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary_dark focus:ring-4 focus:ring-emerald-200 transition-colors shadow-md shadow-emerald-200 flex items-center gap-2">
+                        <i class="fas fa-save"></i> Simpan Data Anak
+                    </button>
+                </div>
+
+            </form>
+            
+            <div class="h-8"></div>
+        </main>
+    </div>
+
+    <!-- Script -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

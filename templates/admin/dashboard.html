@@ -1,0 +1,236 @@
+{{define "content"}}
+<!-- Alert/Greeting -->
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <h3 class="text-lg font-bold text-gray-800">Assalamu'alaikum, {{.User.NamaLengkap}}! 👋</h3>
+        <p class="text-sm text-gray-500 mt-1">Berikut adalah status operasional lembaga saat ini.</p>
+    </div>
+    <button class="bg-primary hover:bg-primary_dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2 w-fit">
+        <i class="fas fa-plus"></i> Catat Kas Masuk
+    </button>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+    <!-- Stat 1 -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center">
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center text-xl mr-4">
+            <i class="fas fa-child"></i>
+        </div>
+        <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Anak Asuh Aktif</p>
+            <h4 class="text-2xl font-bold text-gray-900 mt-1">{{.Stats.AnakAsuhCount}}</h4>
+        </div>
+    </div>
+    
+    <!-- Stat 2 -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl mr-4">
+            <i class="fas fa-wallet"></i>
+        </div>
+        <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Kas Tersedia</p>
+            <h4 class="text-2xl font-bold text-gray-900 mt-1">Rp {{.Stats.KasTersedia}}</h4>
+        </div>
+    </div>
+
+    <!-- Stat 3 -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center relative overflow-hidden">
+        <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-xl mr-4">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending Jumat Berkah</p>
+            <h4 class="text-2xl font-bold text-gray-900 mt-1">{{.Stats.PendingJumatBerkah}} <span class="text-sm font-normal text-gray-400">/ {{.Stats.KuotaJumatBerkah}} Kuota</span></h4>
+        </div>
+        {{if gt .Stats.PendingJumatBerkah 0}}
+        <!-- Indicator dot -->
+        <div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
+        {{end}}
+    </div>
+
+    <!-- Stat 4 -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center">
+        <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center text-xl mr-4">
+            <i class="fas fa-newspaper"></i>
+        </div>
+        <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Artikel Terbit</p>
+            <h4 class="text-2xl font-bold text-gray-900 mt-1">{{.Stats.ArtikelCount}}</h4>
+        </div>
+    </div>
+</div>
+
+<!-- Content Area: Tables & Lists -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Pending Approval Table (Takes 2 columns on large screens) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 overflow-hidden flex flex-col">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+            <h3 class="text-base font-bold text-gray-800">Perlu Persetujuan: Jumat Berkah</h3>
+            <a href="/admin/jumat-berkah" class="text-sm text-primary hover:text-primary_dark font-medium">Lihat Semua &rarr;</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-400 uppercase bg-gray-50/50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 font-medium">Nama Anak</th>
+                        <th scope="col" class="px-6 py-3 font-medium">Wilayah</th>
+                        <th scope="col" class="px-6 py-3 font-medium">Waktu Daftar</th>
+                        <th scope="col" class="px-6 py-3 text-right font-medium">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {{range .PendingJumatBerkah}}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs mr-3">{{.Initials}}</div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{.Nama}}</p>
+                                    <p class="text-xs text-gray-500">{{.Jenjang}} - {{.Status}}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">{{.Wilayah}}</td>
+                        <td class="px-6 py-4 text-xs">{{.WaktuDaftar}}</td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors" title="Setujui" onclick="approveJumatBerkah('{{.ID}}')">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Tolak" onclick="rejectJumatBerkah('{{.ID}}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                            <p>Tidak ada pendaftar yang menunggu persetujuan</p>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{if gt .Stats.PendingJumatBerkah 0}}
+        <!-- Bulk Action area -->
+        <div class="p-4 bg-gray-50 mt-auto border-t border-gray-100 flex items-center justify-between">
+            <span class="text-xs text-gray-500">{{.Stats.PendingJumatBerkah}} pendaftar menunggu disetujui.</span>
+            <button class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-xs font-medium transition-colors shadow-sm" onclick="approveAllJumatBerkah()">
+                <i class="fas fa-check-double mr-1 text-primary"></i> Setujui Semua
+            </button>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Recent Activities/Donations -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h3 class="text-base font-bold text-gray-800">Kas Terbaru</h3>
+        </div>
+        <div class="p-4 space-y-4">
+            {{range .RecentKas}}
+            <!-- Item -->
+            <div class="flex items-start">
+                <div class="w-9 h-9 rounded-lg {{if eq .Type "masuk"}}bg-emerald-50 text-emerald-500{{else}}bg-red-50 text-red-500{{end}} flex items-center justify-center mt-1 flex-shrink-0">
+                    <i class="fas fa-arrow-{{if eq .Type "masuk"}}down{{else}}up{{end}}"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p class="text-sm font-medium text-gray-900">{{.Deskripsi}}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{.Kategori}}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{.Tanggal}}</p>
+                </div>
+                <div class="text-sm font-bold {{if eq .Type "masuk"}}text-emerald-600{{else}}text-red-500{{end}} text-right">
+                    {{if eq .Type "masuk"}}+{{else}}-{{end}} Rp {{.Jumlah}}
+                </div>
+            </div>
+            {{else}}
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-wallet text-gray-300 text-2xl mb-2"></i>
+                <p>Belum ada transaksi kas</p>
+            </div>
+            {{end}}
+        </div>
+        <div class="p-4 border-t border-gray-100 text-center">
+            <a href="/admin/keuangan" class="text-sm text-primary hover:underline font-medium">Lihat Buku Kas</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function approveJumatBerkah(id) {
+    if (confirm('Apakah Anda yakin ingin menyetujui pendaftar ini?')) {
+        // Implement approval logic
+        fetch(`/admin/jumat-berkah/approve/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Gagal menyetujui: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menyetujui');
+        });
+    }
+}
+
+function rejectJumatBerkah(id) {
+    if (confirm('Apakah Anda yakin ingin menolak pendaftar ini?')) {
+        // Implement rejection logic
+        fetch(`/admin/jumat-berkah/reject/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Gagal menolak: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menolak');
+        });
+    }
+}
+
+function approveAllJumatBerkah() {
+    if (confirm('Apakah Anda yakin ingin menyetujui semua pendaftar?')) {
+        // Implement bulk approval logic
+        fetch('/admin/jumat-berkah/approve-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Gagal menyetujui semua: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menyetujui semua');
+        });
+    }
+}
+</script>
+{{end}}

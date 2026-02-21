@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Puri Yatim</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981', // Emerald 500
+                        primary_dark: '#059669', // Emerald 600
+                        primary_light: '#d1fae5', // Emerald 100
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <!-- Mobile overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <!-- Logo Area -->
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="bg-primary text-white p-1.5 rounded-lg mr-3">
+                <i class="fas fa-hand-holding-heart text-lg"></i>
+            </div>
+            <span class="text-lg font-bold text-gray-800 tracking-tight">Admin<span class="text-primary">Panel</span></span>
+            <button class="ml-auto lg:hidden text-gray-500 hover:text-gray-800" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <!-- Dashboard Menu -->
+            <a href="/admin/dashboard" class="flex items-center px-3 py-2.5 {{if eq .ActivePage "dashboard"}}bg-primary_light text-primary_dark rounded-lg group font-medium{{else}}text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors{{end}}">
+                <i class="fas fa-home w-5 mr-3 {{if eq .ActivePage "dashboard"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
+                Dashboard
+            </a>
+            
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Modul Utama</p>
+            <a href="/admin/anak-asuh" class="flex items-center px-3 py-2.5 {{if eq .ActivePage "anak-asuh"}}bg-primary_light text-primary_dark rounded-lg group font-medium{{else}}text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors{{end}}">
+                <i class="fas fa-users w-5 mr-3 {{if eq .ActivePage "anak-asuh"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
+                Data Anak Asuh
+            </a>
+            <a href="/admin/keuangan" class="flex items-center px-3 py-2.5 {{if eq .ActivePage "keuangan"}}bg-primary_light text-primary_dark rounded-lg group font-medium{{else}}text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors{{end}}">
+                <i class="fas fa-wallet w-5 mr-3 {{if eq .ActivePage "keuangan"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
+                Keuangan & Kas
+            </a>
+            <a href="/admin/jumat-berkah" class="flex items-center px-3 py-2.5 {{if eq .ActivePage "jumat-berkah"}}bg-primary_light text-primary_dark rounded-lg group font-medium{{else}}text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors{{end}} flex justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check w-5 mr-3 {{if eq .ActivePage "jumat-berkah"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
+                    Jumat Berkah
+                </div>
+                <!-- Badge Notification -->
+                {{if .PendingJumatBerkahCount}}
+                <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{{.PendingJumatBerkahCount}}</span>
+                {{end}}
+            </a>
+
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Web & Publikasi</p>
+            <a href="/admin/artikel" class="flex items-center px-3 py-2.5 {{if eq .ActivePage "artikel"}}bg-primary_light text-primary_dark rounded-lg group font-medium{{else}}text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors{{end}}">
+                <i class="fas fa-newspaper w-5 mr-3 {{if eq .ActivePage "artikel"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
+                Artikel & Kegiatan
+            </a>
+            <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 {{if eq .ActivePage "pengaturan"}}bg-primary_light text-primary_dark rounded-lg group font-medium{{else}}text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors{{end}}">
+                <i class="fas fa-globe w-5 mr-3 {{if eq .ActivePage "pengaturan"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
+                Pengaturan Web
+            </a>
+        </nav>
+
+        <!-- Bottom User Profile -->
+        <div class="p-4 border-t border-gray-100">
+            <a href="/admin/logout" class="flex items-center group">
+                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name={{.User.NamaLengkap}}&background=10b981&color=fff" alt="User">
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">{{.User.NamaLengkap}}</p>
+                    <p class="text-xs text-gray-500">{{.User.Peran}}</p>
+                </div>
+                <i class="fas fa-sign-out-alt ml-auto text-gray-400 hover:text-red-500 transition-colors"></i>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <!-- Topbar -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 lg:hidden mr-4" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h2 class="text-xl font-semibold text-gray-800 hidden sm:block">{{.PageTitle}}</h2>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" placeholder="Cari data..." class="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all w-48 sm:w-64">
+                </div>
+                <button class="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="far fa-bell text-xl"></i>
+                    {{if .NotificationCount}}
+                    <span class="absolute top-1 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                    {{end}}
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            {{template "content" .}}
+        </main>
+    </div>
+
+    <!-- Script for interactive elements -->
+    <script>
+        // Toggle Sidebar on Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
