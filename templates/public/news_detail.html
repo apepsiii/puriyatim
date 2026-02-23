@@ -1,0 +1,180 @@
+{{define "public/news_detail.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{if .Artikel}}{{.Artikel.Judul}} - {{end}}Puri Yatim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .article-content p { margin-bottom: 1rem; line-height: 1.7; color: #374151; }
+        .article-content h3 { font-size: 1.125rem; font-weight: 700; color: #111827; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .article-content ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 1rem; color: #374151; }
+        .article-content li { margin-bottom: 0.25rem; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        primary_light: '#d1fae5',
+                        primary_dark: '#059669',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="flex justify-center min-h-screen">
+
+    <div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl overflow-x-hidden">
+        
+        <header id="pageHeader" class="absolute top-0 w-full z-30 pt-6 px-5 pb-4 flex justify-between items-center bg-gradient-to-b from-black/50 to-transparent transition-all duration-300">
+            <a href="/berita" id="backBtn" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors border border-white/30 shadow-sm">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <div class="flex gap-2">
+                <button id="bookmarkBtn" onclick="toggleBookmark()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors border border-white/30 shadow-sm">
+                    <i class="far fa-bookmark"></i>
+                </button>
+                <button id="shareBtn" onclick="shareArticle()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors border border-white/30 shadow-sm">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="w-full h-72 bg-gray-200 relative">
+            {{if .Artikel}}
+            {{if .Artikel.GambarThumbnail}}
+            <img src="{{.Artikel.GambarThumbnail}}" alt="{{.Artikel.Judul}}" class="w-full h-full object-cover relative z-10">
+            {{else}}
+            <div class="absolute inset-0 flex items-center justify-center text-gray-400 bg-emerald-50">
+                <i class="fas fa-images text-5xl opacity-50"></i>
+            </div>
+            {{end}}
+            {{else}}
+            <div class="absolute inset-0 flex items-center justify-center text-gray-400 bg-emerald-50">
+                <i class="fas fa-images text-5xl opacity-50"></i>
+            </div>
+            {{end}}
+        </div>
+
+        <main class="relative z-20 -mt-8 bg-white rounded-t-3xl px-6 pt-8 pb-12 shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
+            
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-xs font-bold px-3 py-1 rounded-full {{if .Artikel}}{{if .Artikel.Kategori}}{{if eq .Artikel.Kategori.Slug "prestasi"}}text-blue-700 bg-blue-100{{else if eq .Artikel.Kategori.Slug "pengumuman"}}text-amber-700 bg-amber-100{{else}}text-emerald-700 bg-emerald-100{{end}}{{else}}text-emerald-700 bg-emerald-100{{end}}{{else}}text-emerald-700 bg-emerald-100{{end}} uppercase tracking-wider">
+                    {{if .Artikel}}{{if .Artikel.Kategori}}{{.Artikel.Kategori.NamaKategori}}{{else}}Kegiatan{{end}}{{else}}Kegiatan{{end}}
+                </span>
+                <span class="text-xs font-medium text-gray-500 flex items-center gap-1.5">
+                    <i class="far fa-clock"></i> 3 mnt baca
+                </span>
+            </div>
+
+            <h1 class="text-2xl font-extrabold text-gray-900 leading-tight mb-5">
+                {{if .Artikel}}{{.Artikel.Judul}}{{else}}Artikel tidak ditemukan{{end}}
+            </h1>
+
+            <div class="flex items-center gap-3 mb-8 pb-6 border-b border-gray-100">
+                <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-200 flex-shrink-0 flex items-center justify-center">
+                    <i class="fas fa-user text-gray-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-900">Humas Puri Yatim</p>
+                    <p class="text-xs text-gray-500">{{if .Artikel}}{{if .Artikel.TanggalTerbit}}{{.Artikel.TanggalTerbit.Format "02 January 2006"}}{{else if .Artikel.CreatedAt}}{{.Artikel.CreatedAt.Format "02 January 2006"}}{{end}}{{end}}</p>
+                </div>
+            </div>
+
+            <div class="article-content text-[15px]">
+                {{if .Artikel}}
+                {{if .Artikel.KontenHTML}}
+                {{.Artikel.KontenHTML | safe}}
+                {{else}}
+                <p>Konten artikel belum tersedia.</p>
+                {{end}}
+                {{else}}
+                <p>Artikel tidak ditemukan.</p>
+                {{end}}
+            </div>
+
+            <div class="mt-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-lg shadow-emerald-200 relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 text-white/10 text-9xl">
+                    <i class="fas fa-hand-holding-heart"></i>
+                </div>
+                
+                <div class="relative z-10">
+                    <h4 class="text-lg font-bold mb-2">Terinspirasi untuk Berbagi?</h4>
+                    <p class="text-sm text-emerald-50 mb-5 leading-relaxed">
+                        Lanjutkan rantai kebaikan ini. Sisihkan sebagian rezeki Anda untuk mendukung pendidikan dan gizi anak yatim binaan kami.
+                    </p>
+                    <a href="/jumat-berkah" class="inline-flex items-center justify-center w-full bg-white text-emerald-600 font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-gray-50 transition-colors active:scale-95">
+                        <i class="fas fa-heart text-red-500 mr-2"></i> Donasi Sekarang
+                    </a>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <script>
+        let isBookmarked = false;
+        
+        function toggleBookmark() {
+            isBookmarked = !isBookmarked;
+            const btn = document.getElementById('bookmarkBtn');
+            const icon = btn.querySelector('i');
+            
+            if (isBookmarked) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+            }
+        }
+        
+        function shareArticle() {
+            if (navigator.share) {
+                navigator.share({
+                    title: document.title,
+                    url: window.location.href
+                });
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Link berhasil disalin!');
+            }
+        }
+        
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('pageHeader');
+            const backBtn = document.getElementById('backBtn');
+            const bookmarkBtn = document.getElementById('bookmarkBtn');
+            const shareBtn = document.getElementById('shareBtn');
+            const scrollPos = window.scrollY;
+            
+            if (scrollPos > 50) {
+                header.classList.remove('bg-gradient-to-b', 'from-black/50', 'to-transparent');
+                header.classList.add('bg-white', 'shadow-sm', 'border-b', 'border-gray-100');
+                
+                [backBtn, bookmarkBtn, shareBtn].forEach(btn => {
+                    btn.classList.remove('bg-white/20', 'text-white', 'border-white/30');
+                    btn.classList.add('bg-gray-50', 'text-gray-700', 'border-gray-200');
+                });
+            } else {
+                header.classList.add('bg-gradient-to-b', 'from-black/50', 'to-transparent');
+                header.classList.remove('bg-white', 'shadow-sm', 'border-b', 'border-gray-100');
+                
+                [backBtn, bookmarkBtn, shareBtn].forEach(btn => {
+                    btn.classList.add('bg-white/20', 'text-white', 'border-white/30');
+                    btn.classList.remove('bg-gray-50', 'text-gray-700', 'border-gray-200');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+{{end}}

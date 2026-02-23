@@ -1,39 +1,56 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"time"
+
 	"puriyatim-app/internal/config"
 	"puriyatim-app/internal/models"
+	"puriyatim-app/internal/services"
 
 	"github.com/labstack/echo/v4"
 )
 
 type DashboardHandler struct {
-	cfg *config.Config
+	cfg                *config.Config
+	anakAsuhService    *services.AnakAsuhService
+	keuanganService    *services.KeuanganService
+	jumatBerkahService *services.JumatBerkahService
 }
 
-func NewDashboardHandler(cfg *config.Config) *DashboardHandler {
-	return &DashboardHandler{cfg: cfg}
+func NewDashboardHandler(
+	cfg *config.Config,
+	anakAsuhService *services.AnakAsuhService,
+	keuanganService *services.KeuanganService,
+	jumatBerkahService *services.JumatBerkahService,
+) *DashboardHandler {
+	return &DashboardHandler{
+		cfg:                cfg,
+		anakAsuhService:    anakAsuhService,
+		keuanganService:    keuanganService,
+		jumatBerkahService: jumatBerkahService,
+	}
 }
 
 type DashboardData struct {
-	User                 models.Pengurus
-	Title                string
-	PageTitle            string
-	ActivePage           string
-	Stats                DashboardStats
-	PendingJumatBerkah   []PendingJumatBerkahItem
-	RecentKas            []RecentKasItem
-	NotificationCount    int
+	User                    models.Pengurus
+	Title                   string
+	PageTitle               string
+	ActivePage              string
+	Stats                   DashboardStats
+	PendingJumatBerkah      []PendingJumatBerkahItem
+	RecentKas               []RecentKasItem
+	NotificationCount       int
 	PendingJumatBerkahCount int
 }
 
 type DashboardStats struct {
-	AnakAsuhCount        string
-	KasTersedia          string
-	PendingJumatBerkah   int
-	KuotaJumatBerkah     int
-	ArtikelCount         string
+	AnakAsuhCount      string
+	KasTersedia        string
+	PendingJumatBerkah int
+	KuotaJumatBerkah   int
+	ArtikelCount       string
 }
 
 type PendingJumatBerkahItem struct {
@@ -55,68 +72,87 @@ type RecentKasItem struct {
 }
 
 func (h *DashboardHandler) Dashboard(c echo.Context) error {
-	// Get user from session (mock data for now)
 	user := models.Pengurus{
 		ID:          "1",
-		NamaLengkap: "Budi Admin",
+		NamaLengkap: "Admin",
 		Email:       "admin@puriyatim.com",
 		Peran:       models.PeranSuperadmin,
 	}
 
-	// Mock dashboard stats
+	anakAsuhCount, _ := h.anakAsuhService.Count()
+
+	keuanganStats, _ := h.keuanganService.GetStatistics()
+	kasTersedia := formatRupiah(keuanganStats.TotalSaldo)
+
+	pendingCount := h.jumatBerkahService.GetPendingCount()
+	kuota := 20
+
+	kegiatan, _ := h.jumatBerkahService.GetCurrentKegiatan()
+	if kegiatan != nil {
+		kuota = kegiatan.KuotaMaksimal
+	}
+
 	stats := DashboardStats{
-		AnakAsuhCount:      "142",
-		KasTersedia:        "12,5 Jt",
-		PendingJumatBerkah: 5,
-		KuotaJumatBerkah:   20,
-		ArtikelCount:       "28",
+		AnakAsuhCount:      fmt.Sprintf("%d", anakAsuhCount),
+		KasTersedia:        kasTersedia,
+		PendingJumatBerkah: pendingCount,
+		KuotaJumatBerkah:   kuota,
+		ArtikelCount:       "0",
 	}
 
-	// Mock pending Jumat Berkah data
-	pendingJumatBerkah := []PendingJumatBerkahItem{
-		{
-			ID:          "1",
-			Nama:        "Budi Santoso",
-			Jenjang:     "SD",
-			Status:      "Yatim",
-			Wilayah:     "RT 01 / RW 01",
-			WaktuDaftar: "Hari ini, 08:30 WIB",
-			Initials:    "BS",
-		},
-		{
-			ID:          "2",
-			Nama:        "Siti Aminah",
-			Jenjang:     "SMP",
-			Status:      "Dhuafa",
-			Wilayah:     "RT 02 / RW 01",
-			WaktuDaftar: "Hari ini, 09:15 WIB",
-			Initials:    "SA",
-		},
+	pendingJumatBerkah := []PendingJumatBerkahItem{}
+
+	if kegiatan != nil {
+		pendingList, _ := h.jumatBerkahService.GetPendaftarByStatus(kegiatan.ID, models.StatusApprovalMenunggu)
+		for i, p := range pendingList {
+			if i >= 5 {
+				break
+			}
+
+			nama := ""
+			jenjang := ""
+			status := ""
+			wilayah := ""
+
+			if p.Anak != nil {
+				nama = p.Anak.NamaLengkap
+				jenjang = p.Anak.JenjangPendidikan
+				status = string(p.Anak.StatusAnak)
+				wilayah = fmt.Sprintf("RT %s / RW %s", p.Anak.RT, p.Anak.RW)
+			}
+
+			pendingJumatBerkah = append(pendingJumatBerkah, PendingJumatBerkahItem{
+				ID:          p.ID,
+				Nama:        nama,
+				Jenjang:     jenjang,
+				Status:      status,
+				Wilayah:     wilayah,
+				WaktuDaftar: formatTimeAgo(p.WaktuSubmit),
+				Initials:    getInitials(nama),
+			})
+		}
 	}
 
-	// Mock recent kas data
-	recentKas := []RecentKasItem{
-		{
-			Type:      "masuk",
-			Deskripsi: "Hamba Allah (Transfer)",
-			Kategori:  "Donasi Sedekah Umum",
-			Tanggal:   "10 Feb 2026",
-			Jumlah:    "500.000",
-		},
-		{
-			Type:      "masuk",
-			Deskripsi: "PT. Maju Makmur",
-			Kategori:  "Zakat Perusahaan",
-			Tanggal:   "09 Feb 2026",
-			Jumlah:    "2.000.000",
-		},
-		{
-			Type:      "keluar",
-			Deskripsi: "Bayar SPP SMK (2 Anak)",
-			Kategori:  "Pengeluaran - Pendidikan",
-			Tanggal:   "08 Feb 2026",
-			Jumlah:    "600.000",
-		},
+	recentKas := []RecentKasItem{}
+
+	kasTransactions, _ := h.keuanganService.GetBukuKas()
+	for i, t := range kasTransactions {
+		if i >= 5 {
+			break
+		}
+
+		kategori := t.Kategori
+		if t.Type == "keluar" {
+			kategori = "Pengeluaran"
+		}
+
+		recentKas = append(recentKas, RecentKasItem{
+			Type:      t.Type,
+			Deskripsi: t.Deskripsi,
+			Kategori:  kategori,
+			Tanggal:   t.Tanggal.Format("02 Jan 2006"),
+			Jumlah:    formatRupiah(t.Jumlah),
+		})
 	}
 
 	data := DashboardData{
@@ -127,45 +163,72 @@ func (h *DashboardHandler) Dashboard(c echo.Context) error {
 		Stats:                   stats,
 		PendingJumatBerkah:      pendingJumatBerkah,
 		RecentKas:               recentKas,
-		NotificationCount:       1,
-		PendingJumatBerkahCount: stats.PendingJumatBerkah,
+		NotificationCount:       pendingCount,
+		PendingJumatBerkahCount: pendingCount,
 	}
 
 	return c.Render(http.StatusOK, "admin/dashboard.html", data)
 }
 
-func (h *DashboardHandler) ApproveJumatBerkah(c echo.Context) error {
-	id := c.Param("id")
-	
-	// TODO: Implement actual approval logic in database
-	// For now, just return success response
-	
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Pendaftar berhasil disetujui",
-		"id":      id,
-	})
+func formatTimeAgo(t time.Time) string {
+	duration := time.Since(t)
+
+	if duration.Minutes() < 1 {
+		return "Baru saja"
+	} else if duration.Minutes() < 60 {
+		return fmt.Sprintf("%d menit yang lalu", int(duration.Minutes()))
+	} else if duration.Hours() < 24 {
+		return fmt.Sprintf("%d jam yang lalu", int(duration.Hours()))
+	} else if duration.Hours() < 48 {
+		return "Kemarin"
+	} else {
+		return t.Format("02 Jan 2006")
+	}
 }
 
-func (h *DashboardHandler) RejectJumatBerkah(c echo.Context) error {
-	id := c.Param("id")
-	
-	// TODO: Implement actual rejection logic in database
-	// For now, just return success response
-	
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Pendaftar berhasil ditolak",
-		"id":      id,
-	})
+func getInitials(name string) string {
+	if len(name) < 2 {
+		return name
+	}
+	parts := splitWords(name)
+	if len(parts) >= 2 {
+		return string(parts[0][0]) + string(parts[1][0])
+	}
+	return name[:2]
 }
 
-func (h *DashboardHandler) ApproveAllJumatBerkah(c echo.Context) error {
-	// TODO: Implement actual bulk approval logic in database
-	// For now, just return success response
-	
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Semua pendaftar berhasil disetujui",
-	})
+func splitWords(s string) []string {
+	var words []string
+	word := ""
+	for _, r := range s {
+		if r == ' ' {
+			if word != "" {
+				words = append(words, word)
+				word = ""
+			}
+		} else {
+			word += string(r)
+		}
+	}
+	if word != "" {
+		words = append(words, word)
+	}
+	return words
+}
+
+func formatRupiah(amount float64) string {
+	amountInt := int64(amount)
+	str := fmt.Sprintf("%d", amountInt)
+
+	var result []byte
+	n := 0
+	for i := len(str) - 1; i >= 0; i-- {
+		if n > 0 && n%3 == 0 {
+			result = append([]byte{'.'}, result...)
+		}
+		result = append([]byte{str[i]}, result...)
+		n++
+	}
+
+	return string(result)
 }

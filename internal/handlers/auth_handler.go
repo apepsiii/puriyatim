@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"puriyatim-app/internal/services"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -22,30 +23,43 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"new_password" validate:"required,min=6"`
 }
 
+func (h *AuthHandler) LoginPage(c echo.Context) error {
+	data := map[string]interface{}{
+		"Title": "Login Admin",
+		"Error": c.QueryParam("error"),
+	}
+	return c.Render(http.StatusOK, "admin/login.html", data)
+}
+
 func (h *AuthHandler) Login(c echo.Context) error {
-	var req services.LoginRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "invalid request format",
-		})
+	email := c.FormValue("email")
+	password := c.FormValue("password")
+
+	if email == "" || password == "" {
+		return c.Redirect(http.StatusFound, "/admin/login?error=Email dan password harus diisi")
 	}
 
-	// Validate request
-	if req.Email == "" || req.Password == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "email dan password harus diisi",
-		})
+	req := &services.LoginRequest{
+		Email:    email,
+		Password: password,
 	}
 
-	// Login
-	response, err := h.authService.Login(&req)
+	response, err := h.authService.Login(req)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": err.Error(),
-		})
+		return c.Redirect(http.StatusFound, "/admin/login?error=Email atau password salah")
 	}
 
-	return c.JSON(http.StatusOK, response)
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    response.Token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		Expires:  time.Now().Add(24 * time.Hour),
+	}
+	c.SetCookie(cookie)
+
+	return c.Redirect(http.StatusFound, "/admin/dashboard")
 }
 
 func (h *AuthHandler) GetProfile(c echo.Context) error {

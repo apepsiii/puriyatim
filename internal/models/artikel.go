@@ -21,20 +21,22 @@ type KategoriKonten struct {
 }
 
 type Artikel struct {
-	ID               string          `json:"id_artikel" db:"id_artikel"`
-	IDPengurus       string          `json:"id_pengurus" db:"id_pengurus"`
-	IDKategori       int             `json:"id_kategori" db:"id_kategori"`
-	Judul            string          `json:"judul" db:"judul"`
-	Slug             string          `json:"slug" db:"slug"`
-	KontenHTML       string          `json:"konten_html_markdown" db:"konten_html_markdown"`
-	GambarThumbnail  *string         `json:"gambar_thumbnail_url,omitempty" db:"gambar_thumbnail_url"`
-	MetaDeskripsi    string          `json:"meta_deskripsi" db:"meta_deskripsi"`
-	StatusPublikasi  StatusPublikasi `json:"status_publikasi" db:"status_publikasi"`
-	TanggalTerbit    *time.Time      `json:"tanggal_terbit,omitempty" db:"tanggal_terbit"`
-	
+	ID              string          `json:"id_artikel" db:"id_artikel"`
+	IDPengurus      string          `json:"id_pengurus" db:"id_pengurus"`
+	IDKategori      int             `json:"id_kategori" db:"id_kategori"`
+	Judul           string          `json:"judul" db:"judul"`
+	Slug            string          `json:"slug" db:"slug"`
+	KontenHTML      string          `json:"konten_html_markdown" db:"konten_html_markdown"`
+	GambarThumbnail *string         `json:"gambar_thumbnail_url,omitempty" db:"gambar_thumbnail_url"`
+	MetaDeskripsi   string          `json:"meta_deskripsi" db:"meta_deskripsi"`
+	StatusPublikasi StatusPublikasi `json:"status_publikasi" db:"status_publikasi"`
+	TanggalTerbit   *time.Time      `json:"tanggal_terbit,omitempty" db:"tanggal_terbit"`
+	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at" db:"updated_at"`
+
 	// Join fields
-	Pengurus         *Pengurus       `json:"pengurus,omitempty"`
-	Kategori         *KategoriKonten `json:"kategori,omitempty"`
+	Pengurus *Pengurus       `json:"pengurus,omitempty"`
+	Kategori *KategoriKonten `json:"kategori,omitempty"`
 }
 
 // Value implements driver.Valuer interface

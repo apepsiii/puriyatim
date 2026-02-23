@@ -1,0 +1,340 @@
+{{define "admin/artikel_form.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .IsEdit}}Edit Artikel{{else}}Tulis Artikel{{end}} - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px; }
+        textarea::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', primary_dark: '#059669', primary_light: '#d1fae5' } } }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <div id="mobileOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="bg-primary text-white p-1.5 rounded-lg mr-3">
+                <i class="fas fa-hand-holding-heart text-lg"></i>
+            </div>
+            <span class="text-lg font-bold text-gray-800 tracking-tight">Admin<span class="text-primary">Panel</span></span>
+            <button class="ml-auto lg:hidden text-gray-500 hover:text-gray-800" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <a href="/admin/dashboard" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-home w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Dashboard
+            </a>
+            
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Modul Utama</p>
+            <a href="/admin/anak-asuh" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-users w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Data Anak Asuh
+            </a>
+            <a href="/admin/keuangan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-wallet w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Keuangan & Kas
+            </a>
+            <a href="/admin/jumat-berkah" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors flex justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Jumat Berkah
+                </div>
+            </a>
+
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Web & Publikasi</p>
+            <a href="/admin/artikel" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium">
+                <i class="fas fa-newspaper w-5 mr-3 text-primary"></i> Artikel & Kegiatan
+            </a>
+            <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+            <a href="/" class="flex items-center group">
+                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff" alt="User">
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Admin</p>
+                    <p class="text-xs text-gray-500">Administrator</p>
+                </div>
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 lg:hidden mr-4" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <nav class="hidden sm:flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm text-gray-500">
+                        <li class="inline-flex items-center">
+                            <a href="/admin/dashboard" class="hover:text-gray-900"><i class="fas fa-home mr-2"></i>Home</a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <a href="/admin/artikel" class="ml-1 hover:text-gray-900 font-medium">Artikel & Kegiatan</a>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <span class="ml-1 text-primary font-medium">{{if .IsEdit}}Edit Artikel{{else}}Tulis Baru{{end}}</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            
+            <div class="mb-6 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <a href="/admin/artikel" class="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors bg-white">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 tracking-tight">{{if .IsEdit}}Edit Artikel{{else}}Tulis Artikel Baru{{end}}</h2>
+                        <p class="text-sm text-gray-500 mt-1">{{if .IsEdit}}Perbarui konten artikel yang sudah ada.{{else}}Buat konten menarik untuk pengunjung website Anda.{{end}}</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="artikelForm" action="{{if .IsEdit}}/admin/artikel/{{.Artikel.ID}}{{else}}/admin/artikel{{end}}" method="POST" enctype="multipart/form-data" class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+                
+                <div class="flex-1 space-y-6">
+                    
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div class="mb-4">
+                            <label class="block text-sm font-bold text-gray-800 mb-2">Judul Artikel <span class="text-red-500">*</span></label>
+                            <input type="text" id="input_judul" name="judul" required value="{{if .Artikel}}{{.Artikel.Judul}}{{end}}" placeholder="Masukkan judul artikel yang menarik..." class="bg-gray-50 border border-gray-300 text-gray-900 text-lg font-semibold rounded-xl focus:ring-primary focus:border-primary block w-full p-3.5 outline-none transition-colors" onkeyup="generateSlug()">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Tautan Permanen (Permalink) / Slug</label>
+                            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                                <span class="text-gray-400 text-sm">puriyatim.org/berita/</span>
+                                <input type="text" id="input_slug" name="slug" value="{{if .Artikel}}{{.Artikel.Slug}}{{end}}" class="bg-transparent border-none text-gray-600 text-sm flex-1 outline-none ml-1 focus:ring-0" placeholder="judul-artikel-anda">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[500px]">
+                        
+                        <div class="bg-gray-50 border-b border-gray-200 p-2 flex flex-wrap items-center gap-1">
+                            <div class="flex items-center border-r border-gray-300 pr-2 mr-1">
+                                <select class="bg-transparent text-sm text-gray-700 outline-none cursor-pointer py-1 px-2 hover:bg-gray-200 rounded">
+                                    <option>Paragraph</option>
+                                    <option>Heading 2</option>
+                                    <option>Heading 3</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center border-r border-gray-300 pr-2 mr-1 gap-1">
+                                <button type="button" onclick="formatText('bold')" class="w-8 h-8 rounded hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-bold"></i></button>
+                                <button type="button" onclick="formatText('italic')" class="w-8 h-8 rounded hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-italic"></i></button>
+                                <button type="button" onclick="formatText('underline')" class="w-8 h-8 rounded hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-underline"></i></button>
+                            </div>
+                            <div class="flex items-center border-r border-gray-300 pr-2 mr-1 gap-1">
+                                <button type="button" onclick="formatText('insertUnorderedList')" class="w-8 h-8 rounded hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-list-ul"></i></button>
+                                <button type="button" onclick="formatText('insertOrderedList')" class="w-8 h-8 rounded hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-list-ol"></i></button>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="insertLink()" class="w-8 h-8 rounded hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-link"></i></button>
+                                <button type="button" onclick="formatText('formatBlock', 'blockquote')" class="w-8 h-8 rounded hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"><i class="fas fa-quote-right"></i></button>
+                            </div>
+                        </div>
+
+                        <textarea name="konten" id="editor" class="flex-1 w-full p-6 bg-white text-gray-800 text-base leading-relaxed outline-none resize-none placeholder-gray-300" placeholder="Mulai menulis cerita Anda di sini...">{{if .Artikel}}{{.Artikel.KontenHTML}}{{end}}</textarea>
+                    </div>
+
+                </div>
+
+                <div class="lg:w-80 flex flex-col gap-6">
+                    
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                        <h3 class="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4">Publikasi</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1.5">Status</label>
+                                <select name="status" id="status-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2 outline-none">
+                                    <option value="draft" {{if .Artikel}}{{if eq .Artikel.StatusPublikasi "Draft"}}selected{{end}}{{else}}selected{{end}}>Draft (Disembunyikan)</option>
+                                    <option value="terbit" {{if .Artikel}}{{if eq .Artikel.StatusPublikasi "Terbit"}}selected{{end}}{{end}}>Terbit (Publik)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1.5">Kategori</label>
+                                <select name="kategori_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2 outline-none">
+                                    <option value="1" {{if .Artikel}}{{if eq .Artikel.IDKategori 1}}selected{{end}}{{end}}>Berita Puri Yatim</option>
+                                    <option value="2" {{if .Artikel}}{{if eq .Artikel.IDKategori 2}}selected{{end}}{{end}}>Laporan Kegiatan</option>
+                                    <option value="3" {{if .Artikel}}{{if eq .Artikel.IDKategori 3}}selected{{end}}{{end}}>Pengumuman</option>
+                                    <option value="4" {{if .Artikel}}{{if eq .Artikel.IDKategori 4}}selected{{end}}{{end}}>Prestasi Anak</option>
+                                </select>
+                            </div>
+
+                            <div class="pt-4 border-t border-gray-100 flex flex-col gap-2">
+                                <button type="submit" class="w-full bg-primary hover:bg-primary_dark text-white py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-emerald-200 flex items-center justify-center gap-2">
+                                    <i class="fas fa-paper-plane"></i> {{if .IsEdit}}Update Artikel{{else}}Simpan & Terbitkan{{end}}
+                                </button>
+                                <button type="button" class="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 py-2.5 rounded-lg text-sm font-medium transition-colors" onclick="saveDraft()">
+                                    Simpan sebagai Draft
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                        <h3 class="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4">Gambar Utama (Thumbnail)</h3>
+                        
+                        <label for="thumbnail-upload" class="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-emerald-400 transition-colors group overflow-hidden relative">
+                            <div id="upload-placeholder" class="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4 {{if .Artikel}}{{if .Artikel.GambarThumbnail}}hidden{{end}}{{end}}">
+                                <i class="far fa-image text-3xl text-gray-400 group-hover:text-primary mb-2 transition-colors"></i>
+                                <p class="text-xs text-gray-500"><span class="font-semibold text-primary">Klik upload</span> atau drag & drop</p>
+                                <p class="text-[10px] text-gray-400 mt-1">Disarankan: 1200 x 630px (JPG/PNG)</p>
+                            </div>
+                            <input id="thumbnail-upload" type="file" name="gambar_thumbnail" class="hidden" accept="image/png, image/jpeg, image/jpg" onchange="previewImage(this)" />
+                            
+                            <img id="image-preview" class="{{if not .Artikel}}hidden{{else}}{{if not .Artikel.GambarThumbnail}}hidden{{end}}{{end}} absolute inset-0 w-full h-full object-cover" {{if .Artikel}}{{if .Artikel.GambarThumbnail}}src="{{.Artikel.GambarThumbnail}}"{{end}}{{end}} alt="Preview">
+                        </label>
+                        <div id="remove-image-btn" class="{{if not .Artikel}}hidden{{else}}{{if not .Artikel.GambarThumbnail}}hidden{{end}}{{end}} mt-2 text-center">
+                            <button type="button" class="text-xs text-red-500 font-medium hover:underline" onclick="removeImage()">Hapus Gambar</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                        <h3 class="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                            <i class="fas fa-search text-gray-400"></i> Optimasi SEO
+                        </h3>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1.5 flex justify-between">
+                                <span>Meta Deskripsi</span>
+                                <span id="char-count" class="text-gray-400">{{if .Artikel}}{{if .Artikel.MetaDeskripsi}}{{len .Artikel.MetaDeskripsi}}{{else}}0{{end}}{{else}}0{{end}}/160</span>
+                            </label>
+                            <textarea id="meta-desc" name="meta_deskripsi" rows="4" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none resize-none transition-colors" placeholder="Tuliskan ringkasan singkat artikel (1-2 kalimat)..." onkeyup="updateCharCount(this)">{{if .Artikel}}{{.Artikel.MetaDeskripsi}}{{end}}</textarea>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+            
+            <div class="h-12"></div>
+        </main>
+    </div>
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black/30 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 flex items-center gap-3">
+            <i class="fas fa-spinner fa-spin text-primary text-xl"></i>
+            <span class="font-medium text-gray-700">Menyimpan...</span>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function generateSlug() {
+            const title = document.getElementById('input_judul').value;
+            const slugInput = document.getElementById('input_slug');
+            
+            const slug = title.toLowerCase()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[\s_-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+                
+            slugInput.value = slug;
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('image-preview');
+            const placeholder = document.getElementById('upload-placeholder');
+            const removeBtn = document.getElementById('remove-image-btn');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    removeBtn.classList.remove('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeImage() {
+            const input = document.getElementById('thumbnail-upload');
+            const preview = document.getElementById('image-preview');
+            const placeholder = document.getElementById('upload-placeholder');
+            const removeBtn = document.getElementById('remove-image-btn');
+            
+            input.value = '';
+            preview.src = '';
+            preview.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            removeBtn.classList.add('hidden');
+        }
+
+        function updateCharCount(textarea) {
+            const maxLength = 160;
+            const currentLength = textarea.value.length;
+            const counter = document.getElementById('char-count');
+            
+            counter.textContent = `${currentLength}/${maxLength}`;
+            
+            if (currentLength > maxLength) {
+                counter.classList.add('text-red-500');
+            } else {
+                counter.classList.remove('text-red-500');
+            }
+        }
+
+        function saveDraft() {
+            document.getElementById('status-select').value = 'draft';
+            document.getElementById('artikelForm').submit();
+        }
+
+        function formatText(command, value) {
+            document.getElementById('editor').focus();
+            document.execCommand(command, false, value || null);
+        }
+
+        function insertLink() {
+            const url = prompt('Masukkan URL:');
+            if (url) {
+                document.getElementById('editor').focus();
+                document.execCommand('createLink', false, url);
+            }
+        }
+
+        document.getElementById('artikelForm').addEventListener('submit', function() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
+{{end}}

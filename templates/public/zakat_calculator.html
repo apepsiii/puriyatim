@@ -1,0 +1,301 @@
+{{define "public/zakat_calculator.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kalkulator Zakat - Puri Yatim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        primary_light: '#d1fae5',
+                        primary_dark: '#059669',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="flex justify-center min-h-screen">
+
+    <div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl overflow-x-hidden pb-24">
+        
+        <header class="pt-6 px-5 pb-4 bg-white sticky top-0 z-30 border-b border-gray-100 flex items-center gap-4">
+            <a href="/" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
+                <i class="fas fa-chevron-left text-sm"></i>
+            </a>
+            <h1 class="text-lg font-bold text-gray-900">Kalkulator Zakat</h1>
+        </header>
+
+        <main class="px-5 pt-6">
+            
+            <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6 flex items-start gap-3">
+                <i class="fas fa-info-circle text-emerald-600 mt-0.5 text-lg"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-emerald-800">Zakat Penghasilan (Profesi)</h3>
+                    <p class="text-xs text-emerald-600 mt-1 leading-relaxed">
+                        Zakat yang dikeluarkan dari penghasilan rutin jika telah mencapai nisab (setara 85 gram emas per tahun). Besaran zakat adalah 2.5%.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 mb-6">
+                <form id="formZakat" onsubmit="hitungZakat(event)" class="space-y-4">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Penghasilan / Gaji per Bulan</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <span class="text-gray-500 font-medium">Rp</span>
+                            </div>
+                            <input type="text" id="gaji_pokok" required placeholder="0" class="bg-gray-50 border border-gray-300 text-gray-900 text-lg font-bold rounded-xl focus:ring-primary focus:border-primary block w-full pl-12 pr-4 py-3 outline-none transition-colors text-right" onkeyup="formatCurrency(this); hitungTotal();">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Pendapatan Lain (Bonus/THR) <span class="text-xs font-normal text-gray-400">- Opsional</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <span class="text-gray-500 font-medium">Rp</span>
+                            </div>
+                            <input type="text" id="pendapatan_lain" placeholder="0" class="bg-gray-50 border border-gray-300 text-gray-900 text-lg font-bold rounded-xl focus:ring-primary focus:border-primary block w-full pl-12 pr-4 py-3 outline-none transition-colors text-right" onkeyup="formatCurrency(this); hitungTotal();">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-emerald-700 mb-1.5">Jumlah Penghasilan per Bulan</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <span class="text-emerald-600 font-medium">Rp</span>
+                            </div>
+                            <input type="text" id="total_penghasilan" readonly placeholder="0" class="bg-emerald-50 border border-emerald-200 text-emerald-800 text-lg font-bold rounded-xl block w-full pl-12 pr-4 py-3 outline-none text-right cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-gray-100">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Nisab per Tahun</label>
+                        <div class="relative mb-1">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <span class="text-gray-500 font-medium">Rp</span>
+                            </div>
+                            <input type="text" id="nisab_tahun" readonly placeholder="Memuat data..." class="bg-gray-100 border border-gray-200 text-gray-600 text-lg font-bold rounded-xl block w-full pl-12 pr-4 py-3 outline-none text-right cursor-not-allowed">
+                        </div>
+                        <p class="text-[10px] text-gray-500 text-right italic">Sesuai SK Ketua BAZNAS No. 13 tahun 2025</p>
+                    </div>
+
+                    <button type="submit" id="btnHitung" class="w-full bg-primary hover:bg-primary_dark text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2 mt-4">
+                        <span>Hitung Zakat Saya</span>
+                        <i class="fas fa-calculator"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="loadingState" class="hidden text-center py-8">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary mb-3"></i>
+                <p class="text-sm text-gray-500 font-medium">Menghitung kalkulasi Anda...</p>
+            </div>
+
+            <div id="resultWajib" class="hidden bg-white rounded-3xl shadow-sm border border-emerald-200 overflow-hidden transform transition-all duration-500 opacity-0 translate-y-4">
+                <div class="bg-emerald-500 p-6 text-center text-white relative overflow-hidden">
+                    <i class="fas fa-check-circle text-6xl opacity-20 absolute -right-4 -bottom-4"></i>
+                    <h3 class="text-sm font-bold uppercase tracking-wider mb-1 opacity-90">Zakat per Bulan Anda</h3>
+                    <p id="hasil_zakat" class="text-3xl font-extrabold relative z-10">Rp 0</p>
+                    <span class="inline-block mt-2 text-xs bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">Wajib Zakat</span>
+                </div>
+                
+                <div class="p-5 space-y-3">
+                    <div class="flex justify-between items-center text-sm border-b border-gray-100 pb-3">
+                        <span class="text-gray-500">Estimasi Penghasilan 1 Tahun</span>
+                        <span id="detail_penghasilan" class="font-bold text-gray-900">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm border-b border-gray-100 pb-3">
+                        <span class="text-gray-500 flex items-center gap-1">
+                            Batas Nisab per Tahun
+                        </span>
+                        <span id="detail_nisab" class="font-bold text-gray-900">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-500">Kadar Zakat (2.5% per bulan)</span>
+                        <span id="detail_zakat_bulanan" class="font-bold text-gray-900">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="p-5 pt-0">
+                    <a href="/zakat/payment" id="btnBayarZakat" class="w-full block text-center bg-gray-900 hover:bg-black text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-colors">
+                        Salurkan Zakat Sekarang
+                    </a>
+                </div>
+            </div>
+
+            <div id="resultTidakWajib" class="hidden bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden transform transition-all duration-500 opacity-0 translate-y-4">
+                <div class="bg-gray-100 p-6 text-center relative overflow-hidden">
+                    <i class="fas fa-heart text-6xl text-gray-200 absolute -right-4 -bottom-4"></i>
+                    <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Status Zakat</h3>
+                    <p class="text-xl font-bold text-gray-800 relative z-10">Belum Mencapai Nisab</p>
+                </div>
+                
+                <div class="p-5">
+                    <p class="text-sm text-gray-600 text-center leading-relaxed mb-5">
+                        Estimasi total penghasilan Anda dalam 1 tahun (<span id="tidak_penghasilan" class="font-bold">Rp 0</span>) masih di bawah batas nisab tahunan (<span id="tidak_nisab" class="font-bold">Rp 0</span>). Anda belum diwajibkan membayar zakat penghasilan.
+                    </p>
+                    <p class="text-sm text-center text-gray-500 mb-4 italic">
+                        Namun, Anda tetap bisa menyucikan harta melalui infak atau sedekah.
+                    </p>
+                    <a href="/jumat-berkah" class="w-full block text-center bg-white border-2 border-primary text-primary hover:bg-emerald-50 font-bold py-3 px-4 rounded-xl transition-colors">
+                        Mulai Bersedekah
+                    </a>
+                </div>
+            </div>
+
+        </main>
+
+        <nav class="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-3 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-40">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors group">
+                    <i class="fas fa-home text-xl"></i>
+                    <span class="text-[10px] font-medium">Beranda</span>
+                </a>
+                
+                <a href="/berita" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="fas fa-newspaper text-xl"></i>
+                    <span class="text-[10px] font-medium">Berita</span>
+                </a>
+
+                <a href="/jumat-berkah" class="flex flex-col items-center gap-1 -mt-5">
+                    <div class="w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 border-4 border-white transition-transform active:scale-95">
+                        <i class="fas fa-hand-holding-heart text-2xl"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-primary">Jumat Berkah</span>
+                </a>
+
+                <a href="/zakat" class="flex flex-col items-center gap-1 text-primary">
+                    <div class="relative">
+                        <i class="fas fa-calculator text-xl"></i>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full border border-white"></div>
+                    </div>
+                    <span class="text-[10px] font-bold">Zakat</span>
+                </a>
+
+                <a href="/tentang" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="far fa-user text-xl"></i>
+                    <span class="text-[10px] font-medium">Profil</span>
+                </a>
+            </div>
+        </nav>
+
+    </div>
+
+    <script>
+        let globalNisabTahun = 85685972;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('https://zakat-penghasilan-api.vercel.app/api?penghasilan=0');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.nisab_per_tahun) {
+                        globalNisabTahun = data.nisab_per_tahun;
+                    } else if (data.nisab_per_bulan) {
+                        globalNisabTahun = data.nisab_per_bulan * 12;
+                    }
+                }
+            } catch (error) {
+                console.warn("Gagal mengambil data dari API, menggunakan nisab default.", error);
+            }
+            document.getElementById('nisab_tahun').value = toRupiah(globalNisabTahun).replace('Rp', '').trim();
+        });
+
+        function hitungTotal() {
+            const gaji = parseCurrency(document.getElementById('gaji_pokok').value);
+            const lain = parseCurrency(document.getElementById('pendapatan_lain').value);
+            const total = gaji + lain;
+            
+            if (total > 0) {
+                document.getElementById('total_penghasilan').value = toRupiah(total).replace('Rp', '').trim();
+            } else {
+                document.getElementById('total_penghasilan').value = '';
+            }
+        }
+
+        function formatCurrency(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+            input.value = parseInt(value, 10).toLocaleString('id-ID');
+        }
+
+        function parseCurrency(val) {
+            if(!val) return 0;
+            return parseInt(val.replace(/\D/g, '')) || 0;
+        }
+
+        function toRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
+
+        async function hitungZakat(event) {
+            event.preventDefault();
+            
+            document.getElementById('resultWajib').classList.add('hidden', 'opacity-0', 'translate-y-4');
+            document.getElementById('resultTidakWajib').classList.add('hidden', 'opacity-0', 'translate-y-4');
+            document.getElementById('loadingState').classList.remove('hidden');
+            
+            const gaji = parseCurrency(document.getElementById('gaji_pokok').value);
+            const lain = parseCurrency(document.getElementById('pendapatan_lain').value);
+            
+            const totalPenghasilanBulan = gaji + lain;
+            const totalPenghasilanTahun = totalPenghasilanBulan * 12;
+
+            let isWajib = false;
+            let nilaiZakatBulan = 0;
+
+            if (totalPenghasilanTahun >= globalNisabTahun) {
+                isWajib = true;
+                nilaiZakatBulan = totalPenghasilanBulan * 0.025;
+            } else {
+                isWajib = false;
+            }
+
+            setTimeout(() => {
+                document.getElementById('loadingState').classList.add('hidden');
+                
+                if (isWajib) {
+                    document.getElementById('hasil_zakat').innerText = toRupiah(nilaiZakatBulan);
+                    document.getElementById('detail_penghasilan').innerText = toRupiah(totalPenghasilanTahun);
+                    document.getElementById('detail_nisab').innerText = toRupiah(globalNisabTahun);
+                    document.getElementById('detail_zakat_bulanan').innerText = toRupiah(nilaiZakatBulan);
+                    
+                    localStorage.setItem('zakatAmount', nilaiZakatBulan);
+                    
+                    const resultCard = document.getElementById('resultWajib');
+                    resultCard.classList.remove('hidden');
+                    void resultCard.offsetWidth; 
+                    resultCard.classList.remove('opacity-0', 'translate-y-4');
+                } else {
+                    document.getElementById('tidak_penghasilan').innerText = toRupiah(totalPenghasilanTahun);
+                    document.getElementById('tidak_nisab').innerText = toRupiah(globalNisabTahun);
+                    
+                    const resultCard = document.getElementById('resultTidakWajib');
+                    resultCard.classList.remove('hidden');
+                    void resultCard.offsetWidth;
+                    resultCard.classList.remove('opacity-0', 'translate-y-4');
+                }
+            }, 800);
+        }
+    </script>
+</body>
+</html>
+{{end}}

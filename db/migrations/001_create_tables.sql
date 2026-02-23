@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS ANAK_ASUH (
     rw TEXT NOT NULL,
     desa_kelurahan TEXT NOT NULL,
     kecamatan TEXT NOT NULL,
+    kota TEXT NOT NULL DEFAULT 'Kota Bogor',
     tanggal_masuk DATE NOT NULL,
     status_anak TEXT NOT NULL CHECK (status_anak IN ('Yatim', 'Piatu', 'Yatim Piatu', 'Dhuafa')),
     status_aktif TEXT NOT NULL DEFAULT 'Aktif' CHECK (status_aktif IN ('Aktif', 'Lulus', 'Keluar')),
@@ -117,14 +118,13 @@ CREATE TABLE IF NOT EXISTS ARTIKEL (
 -- Create PEMASUKAN_DONASI table
 CREATE TABLE IF NOT EXISTS PEMASUKAN_DONASI (
     id_pemasukan TEXT PRIMARY KEY,
-    id_donatur TEXT,
+    nama_donatur TEXT DEFAULT 'Hamba Allah',
     tanggal_donasi DATE NOT NULL,
     nominal REAL NOT NULL,
     kategori_dana TEXT NOT NULL CHECK (kategori_dana IN ('Infaq', 'Sedekah', 'Wakaf', 'Zakat', 'Lainnya')),
     catatan TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_donatur) REFERENCES DONATUR(id_donatur) ON DELETE SET NULL
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create PENGELUARAN table

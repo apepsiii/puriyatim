@@ -1,0 +1,485 @@
+{{define "admin/keuangan_pemasukan.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catat Pemasukan - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', primary_dark: '#059669', primary_light: '#d1fae5' } } }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <div id="mobileOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="bg-primary text-white p-1.5 rounded-lg mr-3">
+                <i class="fas fa-hand-holding-heart text-lg"></i>
+            </div>
+            <span class="text-lg font-bold text-gray-800 tracking-tight">Admin<span class="text-primary">Panel</span></span>
+            <button class="ml-auto lg:hidden text-gray-500 hover:text-gray-800" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <a href="/admin/dashboard" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-home w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Dashboard
+            </a>
+            
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Modul Utama</p>
+            <a href="/admin/anak-asuh" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-users w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Data Anak Asuh
+            </a>
+            <a href="/admin/keuangan" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium">
+                <i class="fas fa-wallet w-5 mr-3 text-primary"></i> Keuangan & Kas
+            </a>
+            <a href="/admin/jumat-berkah" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors flex justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Jumat Berkah
+                </div>
+            </a>
+
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Web & Publikasi</p>
+            <a href="/admin/artikel" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Artikel & Kegiatan
+            </a>
+            <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+            <a href="/" class="flex items-center group">
+                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff" alt="User">
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Admin</p>
+                    <p class="text-xs text-gray-500">Administrator</p>
+                </div>
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 lg:hidden mr-4" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <nav class="hidden sm:flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm text-gray-500">
+                        <li class="inline-flex items-center">
+                            <a href="/admin/dashboard" class="hover:text-gray-900"><i class="fas fa-home mr-2"></i>Home</a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <a href="/admin/keuangan" class="ml-1 hover:text-gray-900 font-medium">Keuangan & Kas</a>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <span class="ml-1 text-primary font-medium">Catat Pemasukan</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            
+            <div class="mb-6 flex items-center gap-3">
+                <a href="/admin/keuangan" class="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors bg-white">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Catat Pemasukan Baru</h2>
+                    <p class="text-sm text-gray-500 mt-1">Input data donasi masuk, infak, atau sedekah ke buku kas.</p>
+                </div>
+            </div>
+
+            <form action="/admin/keuangan/pemasukan" method="POST" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden max-w-4xl">
+                
+                <div class="bg-emerald-50 p-4 border-b border-emerald-100 flex items-start gap-3">
+                    <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+                    <div>
+                        <p class="text-sm font-medium text-emerald-800">Pencatatan Pemasukan Kas</p>
+                        <p class="text-xs text-emerald-600 mt-1">Pastikan nominal dan bukti transfer sesuai. Data yang disimpan akan langsung menambah total Saldo Kas lembaga.</p>
+                    </div>
+                </div>
+
+                <div class="p-6 sm:p-8 border-b border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center">
+                        <i class="fas fa-file-invoice-dollar text-primary mr-2"></i> Detail Transaksi
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Terima <span class="text-red-500">*</span></label>
+                            <input type="date" name="tanggal" value="{{.Today}}" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nominal (Rp) <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <span class="text-gray-500 font-medium">Rp</span>
+                                </div>
+                                <input type="text" name="nominal" required placeholder="0" class="bg-white border border-gray-300 text-gray-900 text-lg font-bold rounded-xl focus:ring-primary focus:border-primary block w-full pl-10 p-2.5 outline-none transition-colors text-right" onkeyup="formatCurrency(this)">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kategori Dana <span class="text-red-500">*</span></label>
+                            <select name="kategori" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                                <option value="" selected disabled>Pilih Kategori...</option>
+                                <option value="Zakat">Zakat</option>
+                                <option value="Infaq">Infaq</option>
+                                <option value="Sedekah">Sedekah</option>
+                                <option value="Wakaf">Wakaf</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran <span class="text-red-500">*</span></label>
+                            <select name="metode" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                                <option value="transfer" selected>Transfer Bank</option>
+                                <option value="tunai">Tunai / Cash</option>
+                                <option value="qris">QRIS / E-Wallet</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center">
+                        <i class="fas fa-user-circle text-primary mr-2"></i> Sumber Dana (Donatur)
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <label class="flex-1 flex items-start p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 bg-white transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:ring-1 has-[:checked]:ring-emerald-500">
+                                <div class="flex items-center h-5">
+                                    <input type="radio" name="tipe_sumber" value="anonim" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 focus:ring-emerald-500" checked onchange="toggleDonatur(this.value)">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                    <p class="font-bold text-gray-900">Hamba Allah / Anonim</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">Pilih ini jika donasi berasal dari kotak amal atau donatur tidak ingin dicatat namanya.</p>
+                                </div>
+                            </label>
+
+                            <label class="flex-1 flex items-start p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 bg-white transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:ring-1 has-[:checked]:ring-emerald-500">
+                                <div class="flex items-center h-5">
+                                    <input type="radio" name="tipe_sumber" value="terdaftar" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 focus:ring-emerald-500" onchange="toggleDonatur(this.value)">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                    <p class="font-bold text-gray-900">Donatur Terdaftar</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">Pilih ini untuk menautkan transaksi ke riwayat donatur yang sudah ada di sistem.</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div id="container_donatur" class="hidden mt-4 pt-4 border-t border-gray-200">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cari Nama Donatur <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <select name="id_donatur" id="select_donatur" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full pl-10 p-2.5 outline-none transition-colors">
+                                    <option value="" selected disabled>Ketik untuk mencari nama donatur...</option>
+                                    {{range .DonaturList}}
+                                    <option value="{{.ID}}">{{.NamaDonatur}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                            <p class="text-xs text-primary font-medium mt-2 cursor-pointer hover:underline" onclick="showTambahDonatur()"><i class="fas fa-plus mr-1"></i>Tambah Donatur Baru</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 sm:p-8 border-b border-gray-100">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan / Pesan Donatur</label>
+                            <textarea name="keterangan" rows="4" placeholder="Misal: Mohon doakan almarhum ayah saya..." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors resize-none"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Upload Bukti Transfer <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
+                            <div class="flex items-center justify-center w-full">
+                                <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors group">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 group-hover:text-primary mb-2 transition-colors"></i>
+                                        <p class="mb-1 text-sm text-gray-500"><span class="font-semibold text-primary">Klik untuk upload</span> atau drag & drop</p>
+                                        <p class="text-xs text-gray-500">PNG, JPG, JPEG (Maks. 2MB)</p>
+                                    </div>
+                                    <input id="dropzone-file" type="file" class="hidden" accept="image/png, image/jpeg, image/jpg" />
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="p-6 bg-white flex items-center justify-end gap-3 rounded-b-2xl">
+                    <a href="/admin/keuangan" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 transition-colors">
+                        Batal
+                    </a>
+                    <button type="submit" class="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary_dark focus:ring-4 focus:ring-emerald-200 transition-colors shadow-md shadow-emerald-200 flex items-center gap-2">
+                        <i class="fas fa-save"></i> Simpan Pemasukan
+                    </button>
+                </div>
+
+            </form>
+            
+            <div class="h-8"></div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function formatCurrency(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+            input.value = parseInt(value, 10).toLocaleString('id-ID');
+        }
+
+        function toggleDonatur(value) {
+            const container = document.getElementById('container_donatur');
+            const select = document.getElementById('select_donatur');
+            
+            if (value === 'terdaftar') {
+                container.classList.remove('hidden');
+                select.required = true;
+            } else {
+                container.classList.add('hidden');
+                select.required = false;
+                select.value = "";
+            }
+        }
+
+        let selectedFile = null;
+        let fileInputHandler = null;
+
+        function setupFileInput() {
+            const input = document.getElementById('dropzone-file');
+            if (!input) return;
+            
+            if (fileInputHandler) {
+                input.removeEventListener('change', fileInputHandler);
+            }
+            
+            fileInputHandler = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 2 * 1024 * 1024) {
+                        Swal.fire('Error', 'Ukuran file maksimal 2MB', 'error');
+                        return;
+                    }
+                    selectedFile = file;
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const dropzone = document.getElementById('dropzone-file').parentElement;
+                        dropzone.innerHTML = `
+                            <div class="relative w-full h-32">
+                                <img src="${e.target.result}" class="w-full h-32 object-cover rounded-xl" alt="Preview">
+                                <button type="button" onclick="removeImage()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                                <div class="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                    ${file.name}
+                                </div>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            
+            input.addEventListener('change', fileInputHandler);
+        }
+
+        setupFileInput();
+
+        function removeImage() {
+            selectedFile = null;
+            const container = document.getElementById('dropzone-file');
+            if (container) {
+                container.parentElement.innerHTML = `
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 group-hover:text-primary mb-2 transition-colors"></i>
+                        <p class="mb-1 text-sm text-gray-500"><span class="font-semibold text-primary">Klik untuk upload</span> atau drag & drop</p>
+                        <p class="text-xs text-gray-500">PNG, JPG, JPEG (Maks. 2MB)</p>
+                    </div>
+                    <input id="dropzone-file" type="file" class="hidden" accept="image/png, image/jpeg, image/jpg" />
+                `;
+                setupFileInput();
+            }
+        }
+
+        document.querySelector('form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            const tipeSumber = formData.get('tipe_sumber');
+            if (tipeSumber === 'anonim') {
+                formData.set('nama_donatur', 'Hamba Allah');
+            } else {
+                const donaturSelect = document.getElementById('select_donatur');
+                formData.set('nama_donatur', donaturSelect.options[donaturSelect.selectedIndex].text);
+            }
+
+            Swal.fire({
+                title: 'Menyimpan...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: result.message,
+                        confirmButtonColor: '#10b981'
+                    });
+                    window.location.href = '/admin/keuangan';
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: result.message,
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Terjadi kesalahan saat menyimpan data',
+                    confirmButtonColor: '#10b981'
+                });
+            }
+        });
+
+        function showTambahDonatur() {
+            Swal.fire({
+                title: 'Tambah Donatur Baru',
+                html: `
+                    <input id="swal-nama" class="swal2-input" placeholder="Nama Lengkap">
+                    <input id="swal-telepon" class="swal2-input" placeholder="No. Telepon">
+                    <input id="swal-alamat" class="swal2-input" placeholder="Alamat">
+                `,
+                confirmButtonText: 'Simpan',
+                showCancelButton: true,
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#10b981',
+                preConfirm: () => {
+                    const nama = document.getElementById('swal-nama').value;
+                    const telepon = document.getElementById('swal-telepon').value;
+                    if (!nama) {
+                        Swal.showValidationMessage('Nama wajib diisi');
+                        return false;
+                    }
+                    if (!telepon) {
+                        Swal.showValidationMessage('No. telepon wajib diisi');
+                        return false;
+                    }
+                    return { nama, telepon, alamat: document.getElementById('swal-alamat').value };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menyimpan...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    const formData = new FormData();
+                    formData.append('nama', result.value.nama);
+                    formData.append('telepon', result.value.telepon);
+                    formData.append('alamat', result.value.alamat);
+
+                    try {
+                        const response = await fetch('/admin/keuangan/donatur', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            const select = document.getElementById('select_donatur');
+                            const option = document.createElement('option');
+                            option.value = data.id;
+                            option.textContent = data.nama;
+                            option.selected = true;
+                            select.appendChild(option);
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: data.message,
+                                confirmButtonColor: '#10b981'
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: data.message,
+                                confirmButtonColor: '#10b981'
+                            });
+                        }
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Terjadi kesalahan saat menyimpan data',
+                            confirmButtonColor: '#10b981'
+                        });
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+{{end}}

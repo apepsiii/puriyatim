@@ -1,0 +1,352 @@
+{{define "admin/artikel_list.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artikel & Kegiatan - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', primary_dark: '#059669', primary_light: '#d1fae5' } } }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <div id="mobileOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="bg-primary text-white p-1.5 rounded-lg mr-3">
+                <i class="fas fa-hand-holding-heart text-lg"></i>
+            </div>
+            <span class="text-lg font-bold text-gray-800 tracking-tight">Admin<span class="text-primary">Panel</span></span>
+            <button class="ml-auto lg:hidden text-gray-500 hover:text-gray-800" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <a href="/admin/dashboard" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-home w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Dashboard
+            </a>
+            
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Modul Utama</p>
+            <a href="/admin/anak-asuh" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-users w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Data Anak Asuh
+            </a>
+            <a href="/admin/keuangan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-wallet w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Keuangan & Kas
+            </a>
+            <a href="/admin/jumat-berkah" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors flex justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Jumat Berkah
+                </div>
+            </a>
+
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Web & Publikasi</p>
+            <a href="/admin/artikel" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium">
+                <i class="fas fa-newspaper w-5 mr-3 text-primary"></i> Artikel & Kegiatan
+            </a>
+            <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+            <a href="/" class="flex items-center group">
+                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff" alt="User">
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Admin</p>
+                    <p class="text-xs text-gray-500">Administrator</p>
+                </div>
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 lg:hidden mr-4" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <nav class="hidden sm:flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm text-gray-500">
+                        <li class="inline-flex items-center">
+                            <a href="/admin/dashboard" class="hover:text-gray-900"><i class="fas fa-home mr-2"></i>Home</a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <span class="ml-1 text-gray-900 font-medium">Artikel & Kegiatan</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-sm text-primary hover:text-primary_dark font-medium hidden sm:block">
+                    <i class="fas fa-external-link-alt mr-1"></i> Lihat Web Publik
+                </a>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            
+            {{if .Success}}
+            <div id="alert-success" class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-check-circle text-emerald-500"></i>
+                    <span class="font-medium">{{.Success}}</span>
+                </div>
+                <button onclick="document.getElementById('alert-success').remove()" class="text-emerald-500 hover:text-emerald-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {{end}}
+
+            {{if .Error}}
+            <div id="alert-error" class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                    <span class="font-medium">{{.Error}}</span>
+                </div>
+                <button onclick="document.getElementById('alert-error').remove()" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {{end}}
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Manajemen Konten Web</h2>
+                    <p class="text-sm text-gray-500 mt-1">Kelola berita, laporan kegiatan, dan publikasi lembaga untuk portal publik.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/admin/artikel/tambah" class="bg-primary hover:bg-primary_dark text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <i class="fas fa-pen"></i> Tulis Artikel
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center text-xl mr-4">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Konten</p>
+                        <h4 class="text-2xl font-bold text-gray-900 mt-1">{{.TotalKonten}}</h4>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl mr-4">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Telah Terbit (Publik)</p>
+                        <h4 class="text-2xl font-bold text-gray-900 mt-1">{{.TelahTerbit}}</h4>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mr-4">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Draft / Menunggu</p>
+                        <h4 class="text-2xl font-bold text-gray-900 mt-1">{{.Draft}}</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-500 uppercase bg-gray-50/80 border-b border-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Info Artikel</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Kategori</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Dibuat</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Diupdate</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-4 text-center font-semibold tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {{range .ArtikelList}}
+                            <tr class="hover:bg-gray-50/50 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-16 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative border border-gray-200">
+                                            {{if .HasThumbnail}}
+                                            <img src="{{.Thumbnail}}" alt="{{.Judul}}" class="w-full h-full object-cover" loading="lazy">
+                                            {{else}}
+                                            <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
+                                                <i class="fas fa-newspaper text-emerald-300"></i>
+                                            </div>
+                                            {{end}}
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">{{.Judul}}</p>
+                                            <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                                                <i class="fas fa-user text-gray-400 text-[10px]"></i> {{.Author}}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="text-sm font-medium text-gray-700">{{.Kategori}}</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <p class="text-sm font-medium text-gray-900">{{.CreatedAt}}</p>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <p class="text-sm font-medium text-gray-900">{{.UpdatedAt}}</p>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {{.StatusCSS}}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{if eq .Status `Terbit`}}bg-emerald-500{{else}}bg-gray-400{{end}}"></span>
+                                        {{.Status}}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    <div class="flex justify-center items-center gap-1">
+                                        {{if eq .Status "Terbit"}}
+                                        <a href="/berita/{{.Slug}}" target="_blank" class="text-gray-400 hover:text-blue-600 bg-white hover:bg-blue-50 border border-gray-200 p-2 rounded-lg transition-colors" title="Lihat di Web">
+                                            <i class="fas fa-external-link-alt text-sm"></i>
+                                        </a>
+                                        {{else}}
+                                        <button onclick="publishArtikel('{{.ID}}')" class="text-gray-400 hover:text-emerald-600 bg-white hover:bg-emerald-50 border border-gray-200 p-2 rounded-lg transition-colors" title="Publikasikan">
+                                            <i class="fas fa-paper-plane text-sm"></i>
+                                        </button>
+                                        {{end}}
+                                        <a href="/admin/artikel/{{.ID}}/edit" class="text-gray-400 hover:text-amber-600 bg-white hover:bg-amber-50 border border-gray-200 p-2 rounded-lg transition-colors" title="Edit">
+                                            <i class="far fa-edit text-sm"></i>
+                                        </a>
+                                        <button class="text-gray-400 hover:text-red-600 bg-white hover:bg-red-50 border border-gray-200 p-2 rounded-lg transition-colors" title="Hapus" onclick="deleteArtikel('{{.ID}}')">
+                                            <i class="far fa-trash-alt text-sm"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{else}}
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                            <i class="fas fa-newspaper text-2xl text-gray-300"></i>
+                                        </div>
+                                        <p class="text-gray-500 font-medium">Belum ada artikel</p>
+                                        <a href="/admin/artikel/tambah" class="mt-3 text-sm text-primary hover:text-primary_dark font-medium">
+                                            <i class="fas fa-plus mr-1"></i> Tulis artikel pertama
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-4 border-t border-gray-100 flex items-center justify-between bg-white rounded-b-2xl">
+                    <span class="text-sm text-gray-500">Total <span class="font-medium text-gray-900">{{.TotalKonten}}</span> artikel</span>
+                </div>
+
+            </div>
+            
+            <div class="h-8"></div>
+        </main>
+    </div>
+
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg border px-4 py-3 flex items-center gap-3">
+            <i id="toast-icon" class="fas fa-check-circle text-emerald-500"></i>
+            <span id="toast-message" class="text-sm font-medium text-gray-700"></span>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function showToast(message, isSuccess) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+            
+            msg.textContent = message;
+            icon.className = isSuccess 
+                ? 'fas fa-check-circle text-emerald-500'
+                : 'fas fa-exclamation-circle text-red-500';
+            
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function deleteArtikel(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus artikel ini?')) {
+                fetch(`/admin/artikel/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, true);
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast(data.message, false);
+                    }
+                })
+                .catch(error => {
+                    showToast('Terjadi kesalahan', false);
+                });
+            }
+        }
+
+        function publishArtikel(id) {
+            if (confirm('Publikasikan artikel ini?')) {
+                fetch(`/admin/artikel/${id}/publish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, true);
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast(data.message, false);
+                    }
+                })
+                .catch(error => {
+                    showToast('Terjadi kesalahan', false);
+                });
+            }
+        }
+
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('[id^="alert-"]');
+            alerts.forEach(alert => {
+                alert.style.transition = 'opacity 0.3s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+</html>
+{{end}}

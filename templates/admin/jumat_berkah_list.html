@@ -1,0 +1,508 @@
+{{define "admin/jumat_berkah_list.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jumat Berkah - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', primary_dark: '#059669', primary_light: '#d1fae5' } } }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <div id="mobileOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="bg-primary text-white p-1.5 rounded-lg mr-3">
+                <i class="fas fa-hand-holding-heart text-lg"></i>
+            </div>
+            <span class="text-lg font-bold text-gray-800 tracking-tight">Admin<span class="text-primary">Panel</span></span>
+            <button class="ml-auto lg:hidden text-gray-500 hover:text-gray-800" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <a href="/admin/dashboard" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-home w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Dashboard
+            </a>
+            
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Modul Utama</p>
+            <a href="/admin/anak-asuh" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-users w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Data Anak Asuh
+            </a>
+            <a href="/admin/keuangan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-wallet w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Keuangan & Kas
+            </a>
+            <a href="/admin/jumat-berkah" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium flex justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check w-5 mr-3 text-primary"></i> Jumat Berkah
+                </div>
+                {{if gt .PendingCount 0}}<span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{{.PendingCount}}</span>{{end}}
+            </a>
+
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Web & Publikasi</p>
+            <a href="/admin/artikel" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Artikel & Kegiatan
+            </a>
+            <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+            <a href="/" class="flex items-center group">
+                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff" alt="User">
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Admin</p>
+                    <p class="text-xs text-gray-500">Administrator</p>
+                </div>
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 lg:hidden mr-4" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <nav class="hidden sm:flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm text-gray-500">
+                        <li class="inline-flex items-center">
+                            <a href="/admin/dashboard" class="hover:text-gray-900"><i class="fas fa-home mr-2"></i>Home</a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <span class="ml-1 text-gray-900 font-medium">Jumat Berkah</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <a href="/jumat-berkah" target="_blank" class="text-sm text-primary hover:text-primary_dark font-medium hidden sm:block">
+                    <i class="fas fa-external-link-alt mr-1"></i> Lihat Form Publik
+                </a>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Antrean Jumat Berkah</h2>
+                    <p class="text-sm text-gray-500 mt-1">Periode minggu ini: <span class="font-semibold text-gray-800">{{.CurrentPeriod}}</span></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="openQuotaModal()" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <i class="fas fa-cog text-gray-400"></i> Atur Kuota
+                    </button>
+                    <div class="flex items-center bg-white border border-gray-300 rounded-lg p-1 shadow-sm">
+                        <span class="text-xs font-medium px-2 text-gray-500">Status Form:</span>
+                        {{if .FormOpen}}
+                        <button onclick="toggleFormStatus(false)" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded text-xs font-bold transition-colors shadow-sm cursor-pointer hover:bg-emerald-200">BUKA</button>
+                        {{else}}
+                        <button onclick="toggleFormStatus(true)" class="bg-red-100 text-red-700 px-3 py-1.5 rounded text-xs font-bold transition-colors shadow-sm cursor-pointer hover:bg-red-200">TUTUP</button>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-orange-200 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-24 h-24 bg-orange-50 rounded-bl-full -z-10 opacity-50"></div>
+                    <p class="text-sm font-medium text-gray-500 mb-1">Menunggu Persetujuan</p>
+                    <h3 class="text-3xl font-bold text-gray-900">{{.PendingCount}} <span class="text-sm font-medium text-gray-500">Pendaftar</span></h3>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500 mb-1">Kuota Terisi</p>
+                    <h3 class="text-3xl font-bold text-gray-900">{{.QuotaFilled}} <span class="text-sm font-medium text-gray-500">dari {{.Quota}}</span></h3>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+                        <div class="bg-primary h-1.5 rounded-full" style="width: {{if gt .Quota 0}}{{mul (div .QuotaFilled .Quota) 100}}{{else}}0{{end}}%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Disetujui Minggu Ini</p>
+                        <h3 class="text-3xl font-bold text-emerald-600">{{.ApprovedCount}}</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+
+            <form id="bulkActionForm" class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col relative pb-20 sm:pb-0">
+                
+                <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                        <i class="fas fa-filter text-gray-400"></i> Filter Status:
+                        <select id="statusFilter" onchange="filterByStatus()" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-primary focus:border-primary px-3 py-1.5 outline-none cursor-pointer">
+                            <option value="" {{if not .StatusFilter}}selected{{end}}>Semua</option>
+                            <option value="pending" {{if eq .StatusFilter "pending"}}selected{{end}}>Menunggu</option>
+                            <option value="approved" {{if eq .StatusFilter "approved"}}selected{{end}}>Disetujui</option>
+                            <option value="rejected" {{if eq .StatusFilter "rejected"}}selected{{end}}>Ditolak</option>
+                        </select>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-search text-gray-400 text-xs"></i>
+                        </div>
+                        <input type="text" id="searchInput" onkeyup="searchTable()" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-9 p-2 outline-none transition-colors" placeholder="Cari nama anak...">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-500 uppercase bg-white border-b border-gray-100">
+                            <tr>
+                                <th scope="col" class="p-4 w-4">
+                                    <div class="flex items-center">
+                                        <input id="checkbox-all" type="checkbox" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500" onchange="toggleAllCheckboxes(this)">
+                                    </div>
+                                </th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Anak Asuh</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Wilayah Domisili</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Waktu Submit</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-4 text-center font-semibold tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="tableBody">
+                            {{range .Registrations}}
+                            <tr class="hover:bg-gray-50 transition-colors group" data-status="{{.Status}}" data-name="{{.NamaAnak | lower}}">
+                                <td class="p-4 w-4">
+                                    <div class="flex items-center">
+                                        {{if eq .Status "pending"}}
+                                        <input type="checkbox" name="selected_ids[]" value="{{.ID}}" class="row-checkbox w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500" onchange="updateBulkAction()">
+                                        {{else}}
+                                        <input type="checkbox" disabled class="w-4 h-4 text-gray-400 bg-gray-100 border-gray-300 rounded cursor-not-allowed">
+                                        {{end}}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full {{.AvatarBg}} {{.AvatarText}} flex items-center justify-center font-bold text-xs mr-3">{{.Initials}}</div>
+                                        <div>
+                                            <div class="text-sm font-semibold text-gray-900 {{if eq .Status "approved"}}line-through decoration-gray-400{{end}}">{{.NamaAnak}}</div>
+                                            <div class="text-xs text-gray-500">{{.Jenjang}} - {{.StatusAnak}}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">{{.Wilayah}}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{.SubmittedAt}}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {{if eq .Status "pending"}}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                                        <i class="fas fa-clock mr-1.5 text-orange-400"></i> Menunggu
+                                    </span>
+                                    {{else if eq .Status "approved"}}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <i class="fas fa-check-double mr-1.5 text-emerald-500"></i> Disetujui
+                                    </span>
+                                    {{else}}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                                        <i class="fas fa-times mr-1.5 text-red-500"></i> Ditolak
+                                    </span>
+                                    {{end}}
+                                </td>
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    {{if eq .Status "pending"}}
+                                    <div class="flex justify-center items-center gap-2">
+                                        <button onclick="approveOne('{{.ID}}')" class="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors border border-transparent hover:border-emerald-200" title="Setujui">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button onclick="rejectOne('{{.ID}}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-200" title="Tolak">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    {{else if eq .Status "approved"}}
+                                    <span class="text-xs text-gray-400 italic">Telah diumumkan</span>
+                                    {{else}}
+                                    <span class="text-xs text-gray-400 italic">Ditolak</span>
+                                    {{end}}
+                                </td>
+                            </tr>
+                            {{else}}
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                                            <i class="fas fa-calendar-check text-gray-300 text-2xl"></i>
+                                        </div>
+                                        <p class="font-medium">Belum ada pendaftar</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="fixed bottom-0 left-0 right-0 sm:relative z-20 sm:z-auto border-t border-gray-200 bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-4 sm:rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] sm:shadow-none transition-all" id="bulkActionContainer">
+                    <div class="text-sm text-gray-600 font-medium">
+                        <span id="selected-count" class="font-bold text-primary">0</span> data dipilih
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="button" disabled id="btnBulkReject" onclick="bulkReject()" class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-gray-500 bg-gray-100 rounded-xl cursor-not-allowed transition-colors border border-transparent">
+                            Tolak Terpilih
+                        </button>
+                        <button type="button" disabled id="btnBulkApprove" onclick="bulkApprove()" class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-white bg-gray-300 rounded-xl cursor-not-allowed transition-colors flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fab fa-whatsapp text-lg"></i> Setujui Terpilih
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="h-12"></div>
+        </main>
+    </div>
+
+    <div id="kuotaModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onclick="closeQuotaModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative z-10">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-cog text-emerald-600"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Atur Kuota Mingguan</h3>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Tentukan batas maksimal pendaftar Jumat Berkah untuk minggu ini.</p>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Total Kuota Maksimal <span class="text-red-500">*</span></label>
+                <input type="number" id="kuotaInput" value="{{.Quota}}" min="1" class="bg-gray-50 border border-gray-300 text-gray-900 font-bold text-lg rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeQuotaModal()" class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition-colors">Batal</button>
+                <button onclick="saveQuota()" class="flex-1 bg-primary text-white py-2.5 rounded-xl font-medium hover:bg-primary_dark transition-colors">Simpan Kuota</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function toggleAllCheckboxes(source) {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+            updateBulkAction();
+        }
+
+        function updateBulkAction() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            const count = checkboxes.length;
+            document.getElementById('selected-count').textContent = count;
+            
+            const btnApprove = document.getElementById('btnBulkApprove');
+            const btnReject = document.getElementById('btnBulkReject');
+            
+            if (count > 0) {
+                btnApprove.disabled = false;
+                btnApprove.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                btnApprove.classList.add('bg-primary', 'hover:bg-primary_dark');
+                
+                btnReject.disabled = false;
+                btnReject.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+                btnReject.classList.add('bg-white', 'text-red-600', 'border-red-200', 'hover:bg-red-50');
+            } else {
+                btnApprove.disabled = true;
+                btnApprove.classList.add('bg-gray-300', 'cursor-not-allowed');
+                btnApprove.classList.remove('bg-primary', 'hover:bg-primary_dark');
+                
+                btnReject.disabled = true;
+                btnReject.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+                btnReject.classList.remove('bg-white', 'text-red-600', 'border-red-200', 'hover:bg-red-50');
+                document.getElementById('checkbox-all').checked = false;
+            }
+        }
+
+        function getSelectedIds() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function approveOne(id) {
+            fetch(`/admin/jumat-berkah/${id}/approve`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, confirmButtonColor: '#10b981' })
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Gagal!', text: data.message, confirmButtonColor: '#ef4444' });
+                    }
+                });
+        }
+
+        function rejectOne(id) {
+            Swal.fire({
+                title: 'Tolak Pendaftar?',
+                text: 'Pendaftar ini akan ditolak dan tidak mendapat jatah minggu ini.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Tolak',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/jumat-berkah/${id}/reject`, { method: 'POST' })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, confirmButtonColor: '#10b981' })
+                                    .then(() => location.reload());
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'Gagal!', text: data.message, confirmButtonColor: '#ef4444' });
+                            }
+                        });
+                }
+            });
+        }
+
+        function bulkApprove() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) return;
+            
+            fetch('/admin/jumat-berkah/bulk-approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'ids=' + ids.join(',')
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, confirmButtonColor: '#10b981' })
+                        .then(() => location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal!', text: data.message, confirmButtonColor: '#ef4444' });
+                }
+            });
+        }
+
+        function bulkReject() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) return;
+            
+            Swal.fire({
+                title: 'Tolak ' + ids.length + ' Pendaftar?',
+                text: 'Semua pendaftar terpilih akan ditolak.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Tolak Semua',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/admin/jumat-berkah/bulk-reject', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'ids=' + ids.join(',')
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, confirmButtonColor: '#10b981' })
+                                .then(() => location.reload());
+                        }
+                    });
+                }
+            });
+        }
+
+        function openQuotaModal() {
+            document.getElementById('kuotaModal').classList.remove('hidden');
+        }
+
+        function closeQuotaModal() {
+            document.getElementById('kuotaModal').classList.add('hidden');
+        }
+
+        function saveQuota() {
+            const quota = document.getElementById('kuotaInput').value;
+            fetch('/admin/jumat-berkah/quota', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'quota=' + quota
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, confirmButtonColor: '#10b981' })
+                        .then(() => location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal!', text: data.message, confirmButtonColor: '#ef4444' });
+                }
+            });
+        }
+
+        function toggleFormStatus(open) {
+            fetch('/admin/jumat-berkah/toggle-form', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'open=' + open
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, confirmButtonColor: '#10b981' })
+                        .then(() => location.reload());
+                }
+            });
+        }
+
+        function filterByStatus() {
+            const status = document.getElementById('statusFilter').value;
+            window.location.href = '/admin/jumat-berkah?status=' + status;
+        }
+
+        function searchTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                const name = row.dataset.name || '';
+                row.style.display = name.includes(search) ? '' : 'none';
+            });
+        }
+
+        {{if .Flash}}
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: '{{if eq .Flash.Type "success"}}success{{else if eq .Flash.Type "error"}}error{{else}}info{{end}}',
+                title: '{{.Flash.Title}}',
+                text: '{{.Flash.Message}}',
+                confirmButtonColor: '#10b981'
+            });
+        });
+        {{end}}
+    </script>
+</body>
+</html>
+{{end}}

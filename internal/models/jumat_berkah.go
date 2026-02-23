@@ -9,71 +9,97 @@ import (
 type StatusKegiatan string
 
 const (
-	StatusKegiatanDibuka     StatusKegiatan = "Dibuka"
-	StatusKegiatanDitutup    StatusKegiatan = "Ditutup"
-	StatusKegiatanSelesai    StatusKegiatan = "Selesai"
+	StatusKegiatanDibuka  StatusKegiatan = "Dibuka"
+	StatusKegiatanDitutup StatusKegiatan = "Ditutup"
+	StatusKegiatanSelesai StatusKegiatan = "Selesai"
 )
 
 type StatusApproval string
 
 const (
-	StatusApprovalMenunggu StatusApproval = "Menunggu"
+	StatusApprovalMenunggu  StatusApproval = "Menunggu"
 	StatusApprovalDisetujui StatusApproval = "Disetujui"
-	StatusApprovalDitolak  StatusApproval = "Ditolak"
+	StatusApprovalDitolak   StatusApproval = "Ditolak"
 )
 
 type KegiatanJumatBerkah struct {
-	ID            string         `json:"id_kegiatan" db:"id_kegiatan"`
-	TanggalKegiatan time.Time    `json:"tanggal_kegiatan" db:"tanggal_kegiatan"`
-	KuotaMaksimal int            `json:"kuota_maksimal" db:"kuota_maksimal"`
-	TotalTerdaftar int           `json:"total_terdaftar" db:"total_terdaftar"`
-	StatusKegiatan StatusKegiatan `json:"status_kegiatan" db:"status_kegiatan"`
+	ID              string         `json:"id_kegiatan" db:"id_kegiatan"`
+	TanggalKegiatan time.Time      `json:"tanggal_kegiatan" db:"tanggal_kegiatan"`
+	KuotaMaksimal   int            `json:"kuota_maksimal" db:"kuota_maksimal"`
+	TotalTerdaftar  int            `json:"total_terdaftar" db:"total_terdaftar"`
+	StatusKegiatan  StatusKegiatan `json:"status_kegiatan" db:"status_kegiatan"`
+	CreatedAt       time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at" db:"updated_at"`
 }
 
 type PendaftarJumatBerkah struct {
-ID           string         `json:"id_pendaftaran" db:"id_pendaftaran"`
-	IDKegiatan  string         `json:"id_kegiatan" db:"id_kegiatan"`
-	IDAnak      string         `json:"id_anak" db:"id_anak"`
-	WaktuSubmit time.Time      `json:"waktu_submit" db:"waktu_submit"`
+	ID             string         `json:"id_pendaftaran" db:"id_pendaftaran"`
+	IDKegiatan     string         `json:"id_kegiatan" db:"id_kegiatan"`
+	IDAnak         string         `json:"id_anak" db:"id_anak"`
+	WaktuSubmit    time.Time      `json:"waktu_submit" db:"waktu_submit"`
 	StatusApproval StatusApproval `json:"status_approval" db:"status_approval"`
+	Catatan        string         `json:"catatan" db:"catatan"`
+	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
 
-// Join fields
-Kegiatan     *KegiatanJumatBerkah `json:"kegiatan,omitempty"`
-Anak         *AnakAsuh            `json:"anak,omitempty"`
+	Anak     *AnakAsuh            `json:"anak,omitempty"`
+	Kegiatan *KegiatanJumatBerkah `json:"kegiatan,omitempty"`
 }
 
-// Value implements driver.Valuer interface
 func (s StatusKegiatan) Value() (driver.Value, error) {
-return string(s), nil
+	return string(s), nil
 }
 
-// Scan implements sql.Scanner interface
 func (s *StatusKegiatan) Scan(value interface{}) error {
-if value == nil {
-*s = ""
-return nil
-}
-if str, ok := value.(string); ok {
-*s = StatusKegiatan(str)
-return nil
-}
-return fmt.Errorf("cannot scan %T into StatusKegiatan", value)
+	if value == nil {
+		*s = ""
+		return nil
+	}
+	if str, ok := value.(string); ok {
+		*s = StatusKegiatan(str)
+		return nil
+	}
+	return fmt.Errorf("cannot scan %T into StatusKegiatan", value)
 }
 
-// Value implements driver.Valuer interface
 func (s StatusApproval) Value() (driver.Value, error) {
-return string(s), nil
+	return string(s), nil
 }
 
-// Scan implements sql.Scanner interface
 func (s *StatusApproval) Scan(value interface{}) error {
-if value == nil {
-*s = ""
-return nil
+	if value == nil {
+		*s = ""
+		return nil
+	}
+	if str, ok := value.(string); ok {
+		*s = StatusApproval(str)
+		return nil
+	}
+	return fmt.Errorf("cannot scan %T into StatusApproval", value)
 }
-if str, ok := value.(string); ok {
-*s = StatusApproval(str)
-return nil
+
+func (s StatusApproval) ToServiceStatus() string {
+	switch s {
+	case StatusApprovalMenunggu:
+		return "pending"
+	case StatusApprovalDisetujui:
+		return "approved"
+	case StatusApprovalDitolak:
+		return "rejected"
+	default:
+		return "pending"
+	}
 }
-return fmt.Errorf("cannot scan %T into StatusApproval", value)
+
+func StatusApprovalFromService(s string) StatusApproval {
+	switch s {
+	case "pending":
+		return StatusApprovalMenunggu
+	case "approved":
+		return StatusApprovalDisetujui
+	case "rejected":
+		return StatusApprovalDitolak
+	default:
+		return StatusApprovalMenunggu
+	}
 }

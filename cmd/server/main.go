@@ -5,56 +5,172 @@ import (
 	"io"
 	"log"
 	"puriyatim-app/internal/config"
+	"puriyatim-app/internal/database"
 	"puriyatim-app/internal/handlers"
+	"puriyatim-app/internal/repository"
+	"puriyatim-app/internal/services"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
-	// Load configuration
 	cfg := config.LoadConfig()
 
-	// Initialize Echo
 	e := echo.New()
 
-	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 
-	// Template renderer
-	e.Renderer = &TemplateRenderer{
-		templates: template.Must(template.ParseGlob("templates/**/*.html")),
+	funcMap := template.FuncMap{
+		"safe": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"gt": func(a, b int) bool {
+			return a > b
+		},
+		"slice": func(s string, start int) string {
+			if start >= len(s) {
+				return ""
+			}
+			return s[start:]
+		},
+		"mul": func(a, b int) int {
+			return a * b
+		},
+		"div": func(a, b int) int {
+			if b == 0 {
+				return 0
+			}
+			return a / b
+		},
+		"lower": func(s string) string {
+			result := make([]byte, len(s))
+			for i, c := range s {
+				if c >= 'A' && c <= 'Z' {
+					result[i] = byte(c + 32)
+				} else {
+					result[i] = byte(c)
+				}
+			}
+			return string(result)
+		},
+		"add": func(a, b int) int {
+			return a + b
+		},
 	}
 
-	// Static files
+	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("templates/**/*.html"))
+	e.Renderer = &TemplateRenderer{
+		templates: tmpl,
+	}
+
 	e.Static("/static", "static")
 
-	// Initialize handlers
-	dashboardHandler := handlers.NewDashboardHandler(cfg)
+	db, err := database.NewDB(cfg.DBPath)
+	if err != nil {
+		log.Printf("Warning: Failed to connect to database: %v", err)
+		log.Println("Running without database connection - using mock data")
+	}
 
-	// Routes
-	e.GET("/", func(c echo.Context) error {
-		return c.String(200, "Welcome to Puri Yatim!")
-	})
+	var pengurusRepo *repository.PengurusRepository
+	var anakAsuhRepo *repository.AnakAsuhRepository
+	var keuanganRepo *repository.KeuanganRepository
+	var jumatBerkahRepo *repository.JumatBerkahRepository
+	var artikelRepo *repository.ArtikelRepository
 
-	// Admin routes
+	if db != nil {
+		pengurusRepo = repository.NewPengurusRepository(db.DB)
+		anakAsuhRepo = repository.NewAnakAsuhRepository(db.DB)
+		keuanganRepo = repository.NewKeuanganRepository(db.DB)
+		jumatBerkahRepo = repository.NewJumatBerkahRepository(db.DB)
+		artikelRepo = repository.NewArtikelRepository(db.DB)
+		defer db.Close()
+	}
+
+	authService := services.NewAuthService(pengurusRepo, cfg.JWTSecret)
+	anakAsuhService := services.NewAnakAsuhService(anakAsuhRepo)
+	keuanganService := services.NewKeuanganService(keuanganRepo)
+	jumatBerkahService := services.NewJumatBerkahService(jumatBerkahRepo, anakAsuhRepo)
+	artikelService := services.NewArtikelService(artikelRepo)
+
+	dashboardHandler := handlers.NewDashboardHandler(cfg, anakAsuhService, keuanganService, jumatBerkahService)
+	publicHandler := handlers.NewPublicHandler(jumatBerkahService, anakAsuhService, artikelService)
+	authHandler := handlers.NewAuthHandler(authService)
+	anakAsuhHandler := handlers.NewAnakAsuhHandler(anakAsuhService, keuanganService, jumatBerkahService)
+	keuanganHandler := handlers.NewKeuanganHandler(keuanganService, anakAsuhService)
+	artikelHandler := handlers.NewArtikelHandler(artikelService)
+	pengaturanHandler := handlers.NewPengaturanHandler()
+	jumatBerkahHandler := handlers.NewJumatBerkahHandler(jumatBerkahService)
+
+	e.GET("/", publicHandler.LandingPage)
+	e.GET("/tentang", publicHandler.AboutPage)
+	e.GET("/jumat-berkah", publicHandler.JumatBerkahForm)
+	e.POST("/api/jumat-berkah/register", publicHandler.SubmitJumatBerkahRegistration)
+	e.GET("/api/jumat-berkah/anak", publicHandler.GetJumatBerkahData)
+	e.GET("/zakat", publicHandler.ZakatCalculator)
+	e.GET("/zakat/payment", publicHandler.ZakatPayment)
+	e.POST("/api/zakat/payment", publicHandler.SubmitZakatPayment)
+	e.GET("/zakat/success", publicHandler.ZakatSuccess)
+	e.GET("/berita", publicHandler.NewsList)
+	e.GET("/berita/:id", publicHandler.NewsDetail)
+	e.POST("/api/newsletter", publicHandler.SubscribeNewsletter)
+
+	e.GET("/admin/login", authHandler.LoginPage)
+	e.POST("/admin/login", authHandler.Login)
+
 	admin := e.Group("/admin")
 	{
 		admin.GET("/dashboard", dashboardHandler.Dashboard)
-		admin.POST("/jumat-berkah/approve/:id", dashboardHandler.ApproveJumatBerkah)
-		admin.POST("/jumat-berkah/reject/:id", dashboardHandler.RejectJumatBerkah)
-		admin.POST("/jumat-berkah/approve-all", dashboardHandler.ApproveAllJumatBerkah)
+
+		admin.GET("/jumat-berkah", jumatBerkahHandler.List)
+		admin.POST("/jumat-berkah/:id/approve", jumatBerkahHandler.Approve)
+		admin.POST("/jumat-berkah/:id/reject", jumatBerkahHandler.Reject)
+		admin.POST("/jumat-berkah/bulk-approve", jumatBerkahHandler.BulkApprove)
+		admin.POST("/jumat-berkah/bulk-reject", jumatBerkahHandler.BulkReject)
+		admin.POST("/jumat-berkah/approve-all", jumatBerkahHandler.ApproveAll)
+		admin.POST("/jumat-berkah/quota", jumatBerkahHandler.UpdateQuota)
+		admin.POST("/jumat-berkah/toggle-form", jumatBerkahHandler.ToggleForm)
+
+		admin.GET("/anak-asuh", anakAsuhHandler.List)
+		admin.GET("/anak-asuh/tambah", anakAsuhHandler.Form)
+		admin.POST("/anak-asuh", anakAsuhHandler.Create)
+		admin.GET("/anak-asuh/:id", anakAsuhHandler.Detail)
+		admin.GET("/anak-asuh/:id/edit", anakAsuhHandler.EditForm)
+		admin.POST("/anak-asuh/:id", anakAsuhHandler.Update)
+		admin.DELETE("/anak-asuh/:id", anakAsuhHandler.Delete)
+
+		admin.GET("/keuangan", keuanganHandler.BukuKas)
+		admin.GET("/keuangan/pemasukan", keuanganHandler.CatatPemasukan)
+		admin.POST("/keuangan/pemasukan", keuanganHandler.SavePemasukan)
+		admin.GET("/keuangan/pengeluaran", keuanganHandler.CatatPengeluaran)
+		admin.POST("/keuangan/pengeluaran", keuanganHandler.SavePengeluaran)
+		admin.POST("/keuangan/donatur", keuanganHandler.CreateDonatur)
+		admin.GET("/keuangan/transaksi/:id", keuanganHandler.GetTransactionDetail)
+		admin.PUT("/keuangan/transaksi/:id", keuanganHandler.UpdateTransaction)
+		admin.DELETE("/keuangan/transaksi/:id", keuanganHandler.DeleteTransaction)
+		admin.GET("/keuangan/edit-form-data", keuanganHandler.GetEditFormData)
+		admin.GET("/keuangan/export/csv", keuanganHandler.ExportCSV)
+		admin.GET("/keuangan/export/pdf", keuanganHandler.ExportPDF)
+
+		admin.GET("/artikel", artikelHandler.List)
+		admin.GET("/artikel/tambah", artikelHandler.Form)
+		admin.POST("/artikel", artikelHandler.Create)
+		admin.GET("/artikel/:id/edit", artikelHandler.EditForm)
+		admin.POST("/artikel/:id", artikelHandler.Update)
+		admin.DELETE("/artikel/:id", artikelHandler.Delete)
+		admin.POST("/artikel/:id/publish", artikelHandler.Publish)
+
+		admin.GET("/pengaturan", pengaturanHandler.Page)
+		admin.POST("/pengaturan", pengaturanHandler.Save)
 	}
 
-	// Start server
 	port := ":" + cfg.Port
 	log.Printf("Server starting on %s", port)
 	e.Logger.Fatal(e.Start(port))
 }
 
-// TemplateRenderer is a custom renderer for Echo
 type TemplateRenderer struct {
 	templates *template.Template
 }

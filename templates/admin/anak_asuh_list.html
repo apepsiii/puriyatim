@@ -1,0 +1,363 @@
+{{define "admin/anak_asuh_list.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Anak Asuh - Admin Puri Yatim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        primary_dark: '#059669',
+                        primary_light: '#d1fae5',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <div id="mobileOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="bg-primary text-white p-1.5 rounded-lg mr-3">
+                <i class="fas fa-hand-holding-heart text-lg"></i>
+            </div>
+            <span class="text-lg font-bold text-gray-800 tracking-tight">Admin<span class="text-primary">Panel</span></span>
+            <button class="ml-auto lg:hidden text-gray-500 hover:text-gray-800" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <a href="/admin/dashboard" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-home w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i>
+                Dashboard
+            </a>
+            
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Modul Utama</p>
+            <a href="/admin/anak-asuh" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium">
+                <i class="fas fa-users w-5 mr-3 text-primary"></i>
+                Data Anak Asuh
+            </a>
+            <a href="/admin/keuangan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-wallet w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i>
+                Keuangan & Kas
+            </a>
+            <a href="/admin/jumat-berkah" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors flex justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i>
+                    Jumat Berkah
+                </div>
+            </a>
+
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Web & Publikasi</p>
+            <a href="/admin/artikel" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i>
+                Artikel & Kegiatan
+            </a>
+            <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i>
+                Pengaturan Web
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+            <a href="/" class="flex items-center group">
+                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold overflow-hidden">
+                    <i class="fas fa-user text-gray-500"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Admin</p>
+                    <p class="text-xs text-gray-500">Administrator</p>
+                </div>
+                <i class="fas fa-home ml-auto text-gray-400 hover:text-primary transition-colors"></i>
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 lg:hidden mr-4" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <nav class="hidden sm:flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm text-gray-500">
+                        <li class="inline-flex items-center">
+                            <a href="/admin/dashboard" class="hover:text-gray-900"><i class="fas fa-home mr-2"></i>Home</a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
+                                <span class="ml-1 text-gray-900 font-medium">Data Anak Asuh</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-gray-500 hover:text-primary transition-colors flex items-center gap-2">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span class="hidden sm:inline text-sm">Lihat Website</span>
+                </a>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Manajemen Anak Asuh</h2>
+                    <p class="text-sm text-gray-500 mt-1">Kelola data identitas, pendidikan, dan domisili anak asuh.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <i class="fas fa-file-export text-gray-400"></i> Export
+                    </button>
+                    <a href="/admin/anak-asuh/tambah" class="bg-primary hover:bg-primary_dark text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <i class="fas fa-user-plus"></i> Tambah Data
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                
+                <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div class="relative w-full sm:w-96">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                        <input type="text" id="searchInput" onkeyup="filterTable()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full pl-10 p-2.5 outline-none transition-colors" placeholder="Cari nama, asal sekolah, atau domisili...">
+                    </div>
+                    
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <select id="statusFilter" onchange="filterTable()" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none cursor-pointer">
+                            <option value="">Semua Status</option>
+                            <option value="Yatim">Yatim</option>
+                            <option value="Piatu">Piatu</option>
+                            <option value="Yatim Piatu">Yatim Piatu</option>
+                            <option value="Dhuafa">Dhuafa</option>
+                        </select>
+                        <select id="wilayahFilter" onchange="filterTable()" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none cursor-pointer">
+                            <option value="">Semua Wilayah</option>
+                            <option value="RW 01">RW 01</option>
+                            <option value="RW 02">RW 02</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-500 uppercase bg-gray-50/80 border-b border-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Anak Asuh</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Domisili</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Pendidikan</th>
+                                <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-4 text-center font-semibold tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="tableBody">
+                            {{range .AnakAsuh}}
+                            <tr class="hover:bg-gray-50/50 transition-colors group" data-status="{{.Status}}" data-wilayah="{{.Wilayah}}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="h-10 w-10 flex-shrink-0">
+                                            <div class="h-10 w-10 rounded-full {{.AvatarBg}} {{.AvatarText}} flex items-center justify-center font-bold text-sm">
+                                                {{.Initials}}
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors">{{.NamaLengkap}}</div>
+                                            <div class="text-xs text-gray-500">Panggilan: {{.NamaPanggilan}}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">{{.Domisili}}</div>
+                                    <div class="text-xs text-gray-500">{{.Kelurahan}}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">{{.NamaSekolah}}</div>
+                                    <div class="text-xs text-gray-500">{{.Kelas}}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {{.StatusBg}} {{.StatusText}} border {{.StatusBorder}}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{.StatusDot}}"></span>
+                                        {{.Status}}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    <div class="flex justify-center items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <a href="/admin/anak-asuh/{{.ID}}" class="text-gray-400 hover:text-blue-600 bg-white hover:bg-blue-50 border border-gray-200 p-2 rounded-lg transition-colors" title="Detail">
+                                            <i class="far fa-eye"></i>
+                                        </a>
+                                        <a href="/admin/anak-asuh/{{.ID}}/edit" class="text-gray-400 hover:text-emerald-600 bg-white hover:bg-emerald-50 border border-gray-200 p-2 rounded-lg transition-colors" title="Edit Data">
+                                            <i class="far fa-edit"></i>
+                                        </a>
+                                        <button onclick="deleteAnakAsuh('{{.ID}}', '{{.NamaLengkap}}')" class="text-gray-400 hover:text-red-600 bg-white hover:bg-red-50 border border-gray-200 p-2 rounded-lg transition-colors" title="Hapus">
+                                            <i class="far fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{else}}
+                            <tr>
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                                            <i class="fas fa-users text-gray-300 text-2xl"></i>
+                                        </div>
+                                        <p class="font-medium">Belum ada data anak asuh</p>
+                                        <a href="/admin/anak-asuh/tambah" class="mt-3 text-primary hover:underline text-sm">+ Tambah data baru</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="p-4 border-t border-gray-100 flex items-center justify-between bg-white rounded-b-2xl">
+                    <span class="text-sm text-gray-500">Menampilkan <span class="font-medium text-gray-900">{{.StartIndex}}</span> sampai <span class="font-medium text-gray-900">{{.EndIndex}}</span> dari <span class="font-medium text-gray-900">{{.TotalCount}}</span> data</span>
+                    <div class="inline-flex gap-1">
+                        {{if .HasPrev}}
+                        <a href="/admin/anak-asuh?page={{.PrevPage}}" class="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm">Sebelumnya</a>
+                        {{end}}
+                        {{range .Pages}}
+                        <a href="/admin/anak-asuh?page={{.}}" class="px-3 py-1.5 rounded-lg {{if eq . $.CurrentPage}}bg-primary text-white{{else}}border border-gray-200 text-gray-600 hover:bg-gray-50{{end}} text-sm font-medium">{{.}}</a>
+                        {{end}}
+                        {{if .HasNext}}
+                        <a href="/admin/anak-asuh?page={{.NextPage}}" class="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm">Selanjutnya</a>
+                        {{end}}
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="h-8"></div>
+        </main>
+    </div>
+
+    <div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 relative z-10 text-center">
+            <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Hapus Data Anak Asuh?</h3>
+            <p class="text-sm text-gray-500 mb-6">Data <span id="deleteName" class="font-semibold text-gray-700"></span> akan dihapus secara permanen dan tidak dapat dikembalikan.</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors">Batal</button>
+                <button onclick="confirmDelete()" class="flex-1 bg-red-500 text-white py-2.5 rounded-lg font-medium hover:bg-red-600 transition-colors">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const wilayah = document.getElementById('wilayahFilter').value;
+            const rows = document.querySelectorAll('#tableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowStatus = row.dataset.status || '';
+                const rowWilayah = row.dataset.wilayah || '';
+                
+                const matchSearch = text.includes(search);
+                const matchStatus = !status || rowStatus === status;
+                const matchWilayah = !wilayah || rowWilayah.includes(wilayah);
+                
+                row.style.display = matchSearch && matchStatus && matchWilayah ? '' : 'none';
+            });
+        }
+
+        let deleteId = '';
+        function deleteAnakAsuh(id, name) {
+            deleteId = id;
+            document.getElementById('deleteName').textContent = name;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            deleteId = '';
+        }
+
+        function confirmDelete() {
+            if (deleteId) {
+                fetch(`/admin/anak-asuh/${deleteId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: data.message,
+                            confirmButtonColor: '#10b981'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: data.message,
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Terjadi Kesalahan',
+                        text: 'Tidak dapat menghubungi server',
+                        confirmButtonColor: '#ef4444'
+                    });
+                });
+            }
+            closeDeleteModal();
+        }
+
+        {{if .Flash}}
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: '{{if eq .Flash.Type "success"}}success{{else if eq .Flash.Type "error"}}error{{else if eq .Flash.Type "warning"}}warning{{else if eq .Flash.Type "info"}}info{{else}}success{{end}}',
+                title: '{{.Flash.Title}}',
+                text: '{{.Flash.Message}}',
+                confirmButtonColor: '{{if eq .Flash.Type "success"}}#10b981{{else}}#ef4444{{end}}'
+            });
+        });
+        {{end}}
+    </script>
+</body>
+</html>
+{{end}}

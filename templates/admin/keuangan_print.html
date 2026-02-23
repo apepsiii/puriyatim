@@ -1,0 +1,190 @@
+{{define "admin/keuangan_print.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Buku Kas - Puri Yatim</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #10b981;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #10b981;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .info {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-item {
+            background: #f9fafb;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .info-item:first-child { margin-left: 0; }
+        .info-item:last-child { margin-right: 0; }
+        .info-item .label {
+            font-size: 10px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .info-item .value {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .info-item.pemasukan .value { color: #10b981; }
+        .info-item.pengeluaran .value { color: #ef4444; }
+        .info-item.saldo .value { color: #3b82f6; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            color: #6b7280;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .masuk { color: #10b981; }
+        .keluar { color: #ef4444; }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #9ca3af;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+        }
+        .total-row {
+            background: #f9fafb;
+            font-weight: bold;
+        }
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .print-btn:hover { background: #059669; }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM9 5.5V7h1.5a.5.5 0 0 1 0 1H9v1.5a.5.5 0 0 1-1 0V8H6.5a.5.5 0 0 1 0-1H8V5.5a.5.5 0 0 1 1 0z"/>
+        </svg>
+        Cetak
+    </button>
+
+    <div class="header">
+        <h1>Puri Yatim</h1>
+        <p>Laporan Buku Kas</p>
+        <p style="margin-top: 10px; font-size: 12px;">Dicetak pada: {{.PrintDate}}</p>
+    </div>
+
+    <div class="info">
+        <div class="info-item pemasukan">
+            <div class="label">Total Pemasukan</div>
+            <div class="value">Rp {{printf "%.0f" .TotalPemasukan}}</div>
+        </div>
+        <div class="info-item pengeluaran">
+            <div class="label">Total Pengeluaran</div>
+            <div class="value">Rp {{printf "%.0f" .TotalPengeluaran}}</div>
+        </div>
+        <div class="info-item saldo">
+            <div class="label">Saldo Akhir</div>
+            <div class="value">Rp {{printf "%.0f" .Saldo}}</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Kategori</th>
+                <th>Keterangan</th>
+                <th>Sumber</th>
+                <th class="text-right">Pemasukan</th>
+                <th class="text-right">Pengeluaran</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range $i, $t := .Transactions}}
+            <tr>
+                <td>{{add $i 1}}</td>
+                <td>{{$t.Tanggal.Format "02/01/2006"}}</td>
+                <td>{{$t.Kategori}}</td>
+                <td>{{$t.Deskripsi}}</td>
+                <td>{{if eq $t.Type "masuk"}}{{$t.Donatur}}{{else}}{{$t.AnakAsuh}}{{end}}</td>
+                <td class="text-right {{if eq $t.Type "masuk"}}masuk{{end}}">
+                    {{if eq $t.Type "masuk"}}Rp {{printf "%.0f" $t.Jumlah}}{{end}}
+                </td>
+                <td class="text-right {{if eq $t.Type "keluar"}}keluar{{end}}">
+                    {{if eq $t.Type "keluar"}}Rp {{printf "%.0f" $t.Jumlah}}{{end}}
+                </td>
+            </tr>
+            {{end}}
+            <tr class="total-row">
+                <td colspan="5" class="text-right">TOTAL</td>
+                <td class="text-right masuk">Rp {{printf "%.0f" .TotalPemasukan}}</td>
+                <td class="text-right keluar">Rp {{printf "%.0f" .TotalPengeluaran}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Laporan ini dicetak secara otomatis dari sistem Puri Yatim</p>
+        <p>Dokumen ini bukan bukti pembayaran resmi</p>
+    </div>
+</body>
+</html>
+{{end}}

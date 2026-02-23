@@ -1,0 +1,199 @@
+{{define "content"}}
+<!-- Hero Section -->
+<section class="relative bg-gradient-to-br from-primary to-primary_dark text-white">
+    <div class="absolute inset-0 bg-black opacity-20"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div class="text-center">
+            <h1 class="text-3xl md:text-5xl font-bold mb-4">
+                Pembayaran Berhasil
+            </h1>
+            <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+                Terima kasih atas kepercayaan Anda dalam menunaikan zakat melalui Puri Yatim
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Success Content -->
+<section class="py-12 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <!-- Success Icon -->
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-green-500 text-3xl"></i>
+            </div>
+            
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                Pembayaran Zakat Anda Telah Diterima
+            </h2>
+            
+            <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                Zakat Anda akan segera disalurkan kepada yang berhak menerima sesuai dengan syariat Islam. 
+                Semoga amal ibadah Anda diterima oleh Allah SWT.
+            </p>
+            
+            <!-- Transaction Details -->
+            <div class="bg-gray-50 rounded-lg p-6 mb-8 text-left max-w-md mx-auto">
+                <h3 class="font-semibold text-gray-900 mb-4">Detail Transaksi</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tanggal:</span>
+                        <span class="font-medium">{{.CurrentDate}}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Status:</span>
+                        <span class="font-medium text-green-600">Berhasil</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Metode:</span>
+                        <span class="font-medium">Transfer Bank</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/" class="btn-primary text-white px-8 py-3 rounded-lg font-semibold inline-flex items-center justify-center">
+                    <i class="fas fa-home mr-2"></i>
+                    Kembali ke Beranda
+                </a>
+                <a href="/zakat" class="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg font-semibold inline-flex items-center justify-center hover:bg-gray-300">
+                    <i class="fas fa-calculator mr-2"></i>
+                    Hitung Zakat Lagi
+                </a>
+            </div>
+        </div>
+        
+        <!-- Additional Information -->
+        <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-xl p-6 text-center">
+                <div class="w-12 h-12 bg-primary_light rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-receipt text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 mb-2">Bukti Pembayaran</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Bukti pembayaran telah dikirim ke email Anda
+                </p>
+                <button class="text-primary font-medium text-sm">
+                    <i class="fas fa-download mr-2"></i>
+                    Download Bukti
+                </button>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 text-center">
+                <div class="w-12 h-12 bg-primary_light rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-chart-line text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 mb-2">Laporan Penyaluran</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Pantau penyaluran zakat Anda secara transparan
+                </p>
+                <button class="text-primary font-medium text-sm">
+                    <i class="fas fa-eye mr-2"></i>
+                    Lihat Laporan
+                </button>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 text-center">
+                <div class="w-12 h-12 bg-primary_light rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-share-alt text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 mb-2">Bagikan Kebaikan</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Ajak teman dan keluarga untuk berzakat
+                </p>
+                <button class="text-primary font-medium text-sm">
+                    <i class="fas fa-share mr-2"></i>
+                    Bagikan
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+            Terus Dukung Program Kami
+        </h2>
+        <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            Selain zakat, Anda juga dapat mendukung program lainnya untuk membantu anak yatim dan dhuafa
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a href="/jumat-berkah" class="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors">
+                <div class="w-12 h-12 bg-primary_light rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-hand-holding-heart text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 mb-2">Jumat Berkah</h3>
+                <p class="text-sm text-gray-600">Berbagi nasi kotak setiap Jumat</p>
+            </a>
+            
+            <a href="/tentang" class="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors">
+                <div class="w-12 h-12 bg-primary_light rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 mb-2">Menjadi Relawan</h3>
+                <p class="text-sm text-gray-600">Bergabung sebagai relawan</p>
+            </a>
+            
+            <a href="/berita" class="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors">
+                <div class="w-12 h-12 bg-primary_light rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-newspaper text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 mb-2">Update Kegiatan</h3>
+                <p class="text-sm text-gray-600">Lihat kegiatan terbaru kami</p>
+            </a>
+        </div>
+    </div>
+</section>
+{{end}}
+
+{{define "scripts"}}
+<script>
+    // Get current date
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentDate = new Date().toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        // Update current date in the template
+        const dateElements = document.querySelectorAll('[data-current-date]');
+        dateElements.forEach(element => {
+            element.textContent = currentDate;
+        });
+    });
+    
+    // Download receipt function
+    function downloadReceipt() {
+        // Simulate download
+        const link = document.createElement('a');
+        link.href = '#';
+        link.download = 'bukti-pembayaran-zakat.pdf';
+        link.click();
+    }
+    
+    // Share function
+    function shareSuccess() {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Saya telah menunaikan zakat melalui Puri Yatim',
+                text: 'Yuk, tunaikan zakat Anda juga melalui Puri Yatim untuk membantu anak yatim dan dhuafa.',
+                url: window.location.origin
+            });
+        } else {
+            // Fallback for browsers that don't support Web Share API
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = window.location.href;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            
+            alert('Link telah disalin ke clipboard!');
+        }
+    }
+</script>
+{{end}}
