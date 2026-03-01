@@ -1017,3 +1017,10 @@ func extractCatatanValue(catatan, key string) string {
 	}
 	return "-"
 }
+
+func (h *PublicHandler) OfflinePage(c echo.Context) error {
+	return c.Render(http.StatusOK, "public/offline.html", map[string]interface{}{
+		"Title": "Tidak Ada Koneksi",
+		"Year":  time.Now().Year(),
+	})
+}

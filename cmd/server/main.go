@@ -80,6 +80,11 @@ func main() {
 
 	e.Static("/static", "static")
 
+	// PWA routes — harus dapat diakses dari root scope
+	e.File("/manifest.json", "static/manifest.json")
+	e.File("/sw.js", "static/sw.js")
+	e.File("/favicon.ico", "static/images/icons/favicon-32x32.png")
+
 	db, err := database.NewDB(cfg.DBPath)
 	if err != nil {
 		log.Printf("Warning: Failed to connect to database: %v", err)
@@ -146,6 +151,7 @@ func main() {
 	e.GET("/berita/:id", publicHandler.NewsDetail)
 	e.GET("/galeri", galeriHandler.PublicPage)
 	e.POST("/api/newsletter", publicHandler.SubscribeNewsletter)
+	e.GET("/offline", publicHandler.OfflinePage)
 
 	e.GET("/admin/login", authHandler.LoginPage)
 	e.POST("/admin/login", authHandler.Login)
