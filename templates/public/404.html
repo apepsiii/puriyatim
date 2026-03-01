@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#10b981">
+    <title>Halaman Tidak Ditemukan - Puri Yatim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', 'primary-dark': '#059669' } } }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-16px); }
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fade-in 0.6s ease-out forwards; }
+        .fade-in-delay { animation: fade-in 0.6s ease-out 0.2s forwards; opacity: 0; }
+        .fade-in-delay2 { animation: fade-in 0.6s ease-out 0.4s forwards; opacity: 0; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-white to-teal-50 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="px-6 py-4">
+        <a href="/" class="inline-flex items-center gap-2 group">
+            <div class="w-8 h-8 bg-[#10b981] rounded-lg flex items-center justify-center shadow-sm">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+            </div>
+            <span class="font-bold text-gray-700 group-hover:text-[#10b981] transition-colors">Puri Yatim</span>
+        </a>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+        <div class="text-center max-w-lg mx-auto">
+
+            <!-- Ilustrasi 404 -->
+            <div class="float mb-8 fade-in">
+                <div class="relative inline-block">
+                    <!-- Lingkaran dekorasi -->
+                    <div class="absolute -top-4 -left-4 w-72 h-72 bg-emerald-100 rounded-full opacity-40 blur-2xl"></div>
+                    <div class="absolute -bottom-4 -right-4 w-56 h-56 bg-teal-100 rounded-full opacity-40 blur-2xl"></div>
+
+                    <!-- Angka 404 -->
+                    <div class="relative">
+                        <p class="text-[120px] font-black text-transparent bg-clip-text bg-gradient-to-br from-[#10b981] to-teal-400 leading-none select-none">404</p>
+                        <!-- Icon rumah kecil di tengah -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center border-2 border-emerald-100">
+                                <svg class="w-9 h-9 text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teks -->
+            <div class="fade-in-delay">
+                <h1 class="text-2xl font-bold text-gray-800 mb-3">Halaman Tidak Ditemukan</h1>
+                <p class="text-gray-500 mb-2">Ups! Halaman yang Anda cari tidak ada atau sudah dipindahkan.</p>
+                <p class="text-sm text-gray-400 mb-8">Coba periksa kembali URL yang Anda masukkan, atau kembali ke beranda.</p>
+            </div>
+
+            <!-- Tombol aksi -->
+            <div class="fade-in-delay2 flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/"
+                   class="inline-flex items-center justify-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 shadow-sm shadow-emerald-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Kembali ke Beranda
+                </a>
+                <button onclick="history.back()"
+                        class="inline-flex items-center justify-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Halaman Sebelumnya
+                </button>
+            </div>
+
+            <!-- Link cepat -->
+            <div class="mt-12 pt-8 border-t border-gray-100 fade-in-delay2">
+                <p class="text-sm text-gray-400 mb-4">Mungkin Anda mencari:</p>
+                <div class="flex flex-wrap gap-2 justify-center">
+                    <a href="/jumat-berkah"
+                       class="text-sm text-[#10b981] hover:text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors">
+                        Jumat Berkah
+                    </a>
+                    <a href="/zakat"
+                       class="text-sm text-[#10b981] hover:text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors">
+                        Kalkulator Zakat
+                    </a>
+                    <a href="/program-donasi"
+                       class="text-sm text-[#10b981] hover:text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors">
+                        Program Donasi
+                    </a>
+                    <a href="/berita"
+                       class="text-sm text-[#10b981] hover:text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors">
+                        Berita
+                    </a>
+                    <a href="/tentang"
+                       class="text-sm text-[#10b981] hover:text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors">
+                        Tentang Kami
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-gray-400">
+        &copy; {{.Year}} Puri Yatim &mdash; <span class="text-gray-300">v1.0.0</span>
+    </footer>
+
+</body>
+</html>

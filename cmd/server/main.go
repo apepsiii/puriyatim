@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"puriyatim-app/internal/config"
 	"puriyatim-app/internal/database"
 	"puriyatim-app/internal/handlers"
@@ -11,6 +12,7 @@ import (
 	"puriyatim-app/internal/repository"
 	"puriyatim-app/internal/services"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
@@ -24,6 +26,38 @@ func main() {
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
 	e.Use(echomw.Secure())
+
+	// Custom HTTP error handler
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		// Jangan handle jika response sudah dikirim
+		if c.Response().Committed {
+			return
+		}
+
+		code := http.StatusInternalServerError
+		if he, ok := err.(*echo.HTTPError); ok {
+			code = he.Code
+		}
+
+		data := map[string]interface{}{
+			"Year": time.Now().Year(),
+		}
+
+		// Render template sesuai kode error
+		switch code {
+		case http.StatusNotFound:
+			if renderErr := c.Render(http.StatusNotFound, "public/404.html", data); renderErr != nil {
+				c.String(http.StatusNotFound, "404 - Halaman tidak ditemukan")
+			}
+		case http.StatusForbidden, http.StatusUnauthorized:
+			if renderErr := c.Render(http.StatusForbidden, "public/403.html", data); renderErr != nil {
+				c.String(http.StatusForbidden, "403 - Akses ditolak")
+			}
+		default:
+			// Untuk error lain, gunakan handler bawaan Echo
+			e.DefaultHTTPErrorHandler(err, c)
+		}
+	}
 
 	funcMap := template.FuncMap{
 		"safe": func(s string) template.HTML {

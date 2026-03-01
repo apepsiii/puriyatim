@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#10b981">
+    <title>Akses Ditolak - Puri Yatim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', 'primary-dark': '#059669' } } }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-16px); }
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fade-in 0.6s ease-out forwards; }
+        .fade-in-delay { animation: fade-in 0.6s ease-out 0.2s forwards; opacity: 0; }
+        .fade-in-delay2 { animation: fade-in 0.6s ease-out 0.4s forwards; opacity: 0; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 via-white to-orange-50 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="px-6 py-4">
+        <a href="/" class="inline-flex items-center gap-2 group">
+            <div class="w-8 h-8 bg-[#10b981] rounded-lg flex items-center justify-center shadow-sm">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+            </div>
+            <span class="font-bold text-gray-700 group-hover:text-[#10b981] transition-colors">Puri Yatim</span>
+        </a>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+        <div class="text-center max-w-lg mx-auto">
+
+            <!-- Ilustrasi 403 -->
+            <div class="float mb-8 fade-in">
+                <div class="relative inline-block">
+                    <!-- Lingkaran dekorasi -->
+                    <div class="absolute -top-4 -left-4 w-72 h-72 bg-amber-100 rounded-full opacity-40 blur-2xl"></div>
+                    <div class="absolute -bottom-4 -right-4 w-56 h-56 bg-orange-100 rounded-full opacity-40 blur-2xl"></div>
+
+                    <!-- Angka 403 -->
+                    <div class="relative">
+                        <p class="text-[120px] font-black text-transparent bg-clip-text bg-gradient-to-br from-amber-400 to-orange-400 leading-none select-none">403</p>
+                        <!-- Icon kunci di tengah -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center border-2 border-amber-100">
+                                <svg class="w-9 h-9 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teks -->
+            <div class="fade-in-delay">
+                <h1 class="text-2xl font-bold text-gray-800 mb-3">Akses Ditolak</h1>
+                <p class="text-gray-500 mb-2">Maaf, Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+                <p class="text-sm text-gray-400 mb-8">Pastikan Anda sudah login atau hubungi administrator jika merasa ini adalah kesalahan.</p>
+            </div>
+
+            <!-- Pesan tambahan (jika ada) -->
+            {{if .Message}}
+            <div class="fade-in-delay mb-6">
+                <div class="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{.Message}}
+                </div>
+            </div>
+            {{end}}
+
+            <!-- Tombol aksi -->
+            <div class="fade-in-delay2 flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/admin/login"
+                   class="inline-flex items-center justify-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 shadow-sm shadow-emerald-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
+                    Login Admin
+                </a>
+                <a href="/"
+                   class="inline-flex items-center justify-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Kembali ke Beranda
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-gray-400">
+        &copy; {{.Year}} Puri Yatim &mdash; <span class="text-gray-300">v1.0.0</span>
+    </footer>
+
+</body>
+</html>
