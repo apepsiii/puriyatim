@@ -66,17 +66,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		cookieDuration = 7 * 24 * time.Hour
 	}
 
-	cookie := &http.Cookie{
-		Name:     "token",
-		Value:    response.Token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   isSecureRequest(c),
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(cookieDuration),
-		MaxAge:   int(cookieDuration.Seconds()),
-	}
-	c.SetCookie(cookie)
+	SetAuthCookie(c, response.Token, cookieDuration)
 	c.Response().Header().Set("Cache-Control", "no-store")
 
 	return c.Redirect(http.StatusFound, "/admin/dashboard")
@@ -136,22 +126,10 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 }
 
 func (h *AuthHandler) Logout(c echo.Context) error {
-	cookie := &http.Cookie{
-		Name:     "token",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   isSecureRequest(c),
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Unix(0, 0),
-		MaxAge:   -1,
-	}
-	c.SetCookie(cookie)
+	ClearAuthCookie(c)
 
 	if strings.Contains(strings.ToLower(c.Request().Header.Get("Accept")), "application/json") {
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "logout berhasil",
-		})
+		return JSONOk(c, "logout berhasil")
 	}
 	return c.Redirect(http.StatusFound, "/admin/login")
 }
@@ -230,12 +208,5 @@ func (l *loginAttemptLimiter) cleanup(now time.Time) {
 	}
 }
 
-func isSecureRequest(c echo.Context) bool {
-	if c.IsTLS() {
-		return true
-	}
-	if strings.EqualFold(c.Request().Header.Get("X-Forwarded-Proto"), "https") {
-		return true
-	}
-	return false
-}
+// isSecureRequest adalah shim ke IsSecureRequest (helpers.go).
+func isSecureRequest(c echo.Context) bool { return IsSecureRequest(c) }

@@ -305,18 +305,7 @@ func (h *AnakAsuhHandler) Detail(c echo.Context) error {
 		pendaftarList, err := h.jumatBerkahService.GetPendaftarByAnakID(id)
 		if err == nil {
 			for _, p := range pendaftarList {
-				statusBg, statusText := "", ""
-				switch p.StatusApproval {
-				case models.StatusApprovalDisetujui:
-					statusBg = "bg-green-100"
-					statusText = "text-green-700"
-				case models.StatusApprovalDitolak:
-					statusBg = "bg-red-100"
-					statusText = "text-red-700"
-				default:
-					statusBg = "bg-yellow-100"
-					statusText = "text-yellow-700"
-				}
+				statusBg, statusText := ApprovalStatusBgText(p.StatusApproval)
 
 				tanggal := ""
 				if p.Kegiatan != nil {
@@ -606,186 +595,51 @@ func (h *AnakAsuhHandler) Delete(c echo.Context) error {
 
 	item, err := h.service.GetByID(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{
-			"success": false,
-			"message": "Data tidak ditemukan",
-		})
+		return JSONNotFound(c, "Data tidak ditemukan")
 	}
 
 	nama := item.NamaLengkap
-	err = h.service.Delete(id)
-
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal menghapus data: " + err.Error(),
-		})
+	if err = h.service.Delete(id); err != nil {
+		return JSONInternalError(c, "Gagal menghapus data: "+err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Data " + nama + " berhasil dihapus",
-	})
+	return JSONOk(c, "Data "+nama+" berhasil dihapus")
 }
 
-func formatDate(t time.Time) string {
-	if t.IsZero() {
-		return "-"
-	}
-	months := []string{
-		"Januari", "Februari", "Maret", "April", "Mei", "Juni",
-		"Juli", "Agustus", "September", "Oktober", "November", "Desember",
-	}
-	return fmt.Sprintf("%d %s %d", t.Day(), months[t.Month()-1], t.Year())
-}
+func formatDate(t time.Time) string { return FormatDate(t) }
 
-func normalizeFotoProfilURLPtr(raw *string) *string {
-	if raw == nil || *raw == "" {
-		return nil
-	}
-	normalized := normalizeFotoProfilURL(*raw)
-	return &normalized
-}
+func normalizeFotoProfilURLPtr(raw *string) *string { return NormalizeFotoProfilURLPtr(raw) }
 
-func normalizeFotoProfilURL(raw string) string {
-	url := strings.TrimSpace(raw)
-	if url == "" {
-		return ""
-	}
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
-		return url
-	}
-	if strings.HasPrefix(url, "/static/") {
-		return url
-	}
-	if strings.HasPrefix(url, "/uploads/") {
-		return "/static" + url
-	}
-	if strings.HasPrefix(url, "uploads/") {
-		return "/static/" + url
-	}
-	if strings.HasPrefix(url, "static/") {
-		return "/" + url
-	}
-	return url
-}
+func normalizeFotoProfilURL(raw string) string { return NormalizeFotoProfilURL(raw) }
 
-func fotoProfilFilePath(url string) string {
-	normalized := normalizeFotoProfilURL(url)
-	if !strings.HasPrefix(normalized, "/static/") {
-		return ""
-	}
-	relativePath := strings.TrimPrefix(normalized, "/static/")
-	return filepath.Join("static", filepath.FromSlash(relativePath))
-}
+func fotoProfilFilePath(url string) string { return FotoProfilFilePath(url) }
 
-func setFlash(c echo.Context, flashType, title, message string) {
-	cookie := &http.Cookie{
-		Name:     "flash_type",
-		Value:    flashType,
-		Path:     "/",
-		MaxAge:   60,
-		HttpOnly: true,
-	}
-	c.SetCookie(cookie)
+func setFlash(c echo.Context, flashType, title, message string) { SetFlash(c, flashType, title, message) }
 
-	cookie = &http.Cookie{
-		Name:     "flash_title",
-		Value:    title,
-		Path:     "/",
-		MaxAge:   60,
-		HttpOnly: true,
-	}
-	c.SetCookie(cookie)
-
-	cookie = &http.Cookie{
-		Name:     "flash_message",
-		Value:    message,
-		Path:     "/",
-		MaxAge:   60,
-		HttpOnly: true,
-	}
-	c.SetCookie(cookie)
-}
-
-func getFlash(c echo.Context) *FlashMessage {
-	flashType, err := c.Cookie("flash_type")
-	if err != nil {
-		return nil
-	}
-
-	flashTitle, err := c.Cookie("flash_title")
-	if err != nil {
-		return nil
-	}
-
-	flashMessage, err := c.Cookie("flash_message")
-	if err != nil {
-		return nil
-	}
-
-	c.SetCookie(&http.Cookie{
-		Name:     "flash_type",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-	})
-	c.SetCookie(&http.Cookie{
-		Name:     "flash_title",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-	})
-	c.SetCookie(&http.Cookie{
-		Name:     "flash_message",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-	})
-
-	return &FlashMessage{
-		Type:    flashType.Value,
-		Title:   flashTitle.Value,
-		Message: flashMessage.Value,
-	}
-}
+func getFlash(c echo.Context) *FlashMessage { return GetFlash(c) }
 
 // ExportExcel exports anak asuh data to Excel format
 func (h *AnakAsuhHandler) ExportExcel(c echo.Context) error {
 	file, err := h.exportImportService.ExportToExcel()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal membuat file Excel: " + err.Error(),
-		})
+		return JSONInternalError(c, "Gagal membuat file Excel: "+err.Error())
 	}
 
 	filename := fmt.Sprintf("data_anak_asuh_%s.xlsx", time.Now().Format("20060102_150405"))
-	
 	c.Response().Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-	
 	return file.Write(c.Response().Writer)
 }
 
 // ExportCSV exports anak asuh data to CSV format
 func (h *AnakAsuhHandler) ExportCSV(c echo.Context) error {
 	filename := fmt.Sprintf("data_anak_asuh_%s.csv", time.Now().Format("20060102_150405"))
-	
 	c.Response().Header().Set("Content-Type", "text/csv")
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-	
-	err := h.exportImportService.ExportToCSV(c.Response().Writer)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal membuat file CSV: " + err.Error(),
-		})
+
+	if err := h.exportImportService.ExportToCSV(c.Response().Writer); err != nil {
+		return JSONInternalError(c, "Gagal membuat file CSV: "+err.Error())
 	}
-	
 	return nil
 }
 
@@ -793,17 +647,12 @@ func (h *AnakAsuhHandler) ExportCSV(c echo.Context) error {
 func (h *AnakAsuhHandler) DownloadTemplate(c echo.Context) error {
 	file, err := h.exportImportService.GetImportTemplate()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal membuat template: " + err.Error(),
-		})
+		return JSONInternalError(c, "Gagal membuat template: "+err.Error())
 	}
 
 	filename := "template_import_anak_asuh.xlsx"
-	
 	c.Response().Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-	
 	return file.Write(c.Response().Writer)
 }
 
@@ -811,53 +660,41 @@ func (h *AnakAsuhHandler) DownloadTemplate(c echo.Context) error {
 func (h *AnakAsuhHandler) ImportData(c echo.Context) error {
 	file, err := c.FormFile("file")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "File tidak ditemukan",
-		})
+		return JSONBadRequest(c, "File tidak ditemukan")
 	}
 
-	// Validate file
 	if err := h.exportImportService.ValidateImportFile(file); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		return JSONBadRequest(c, err.Error())
 	}
 
-	// Import based on file type
+	var importErrors []string
 	var successCount int
-	var errors []string
 
 	if strings.HasSuffix(strings.ToLower(file.Filename), ".csv") {
-		successCount, errors, err = h.exportImportService.ImportFromCSV(file)
+		successCount, importErrors, err = h.exportImportService.ImportFromCSV(file)
 	} else {
-		successCount, errors, err = h.exportImportService.ImportFromExcel(file)
+		successCount, importErrors, err = h.exportImportService.ImportFromExcel(file)
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal mengimport data: " + err.Error(),
-		})
+		return JSONInternalError(c, "Gagal mengimport data: "+err.Error())
 	}
 
-	stats := h.exportImportService.GetImportStats(successCount, errors)
-	
+	stats := h.exportImportService.GetImportStats(successCount, importErrors)
+
 	if successCount > 0 {
-		message := fmt.Sprintf("Berhasil mengimport %d data", successCount)
-		if len(errors) > 0 {
-			message += fmt.Sprintf(", %d data gagal", len(errors))
+		msg := fmt.Sprintf("Berhasil mengimport %d data", successCount)
+		if len(importErrors) > 0 {
+			msg += fmt.Sprintf(", %d data gagal", len(importErrors))
 		}
-		
-		return c.JSON(http.StatusOK, map[string]interface{}{
+		return JSONWithFields(c, map[string]interface{}{
 			"success": true,
-			"message": message,
+			"message": msg,
 			"stats":   stats,
 		})
 	}
 
-	return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": false,
 		"message": "Tidak ada data yang berhasil diimport",
 		"stats":   stats,

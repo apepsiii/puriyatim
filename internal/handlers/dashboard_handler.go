@@ -72,17 +72,25 @@ type RecentKasItem struct {
 }
 
 func (h *DashboardHandler) Dashboard(c echo.Context) error {
+	// Ambil data user dari JWT context yang di-set middleware
+	userNama, _ := c.Get("user_nama").(string)
+	userEmail, _ := c.Get("user_email").(string)
+	userPeran, _ := c.Get("user_role").(models.PeranPengurus)
+	userID, _ := c.Get("user_id").(string)
+	if userNama == "" {
+		userNama = "Admin"
+	}
 	user := models.Pengurus{
-		ID:          "1",
-		NamaLengkap: "Admin",
-		Email:       "admin@puriyatim.com",
-		Peran:       models.PeranSuperadmin,
+		ID:          userID,
+		NamaLengkap: userNama,
+		Email:       userEmail,
+		Peran:       userPeran,
 	}
 
 	anakAsuhCount, _ := h.anakAsuhService.Count()
 
 	keuanganStats, _ := h.keuanganService.GetStatistics()
-	kasTersedia := formatRupiah(keuanganStats.TotalSaldo)
+	kasTersedia := FormatRupiah(keuanganStats.TotalSaldo)
 
 	pendingCount := h.jumatBerkahService.GetPendingCount()
 	kuota := 20
@@ -151,7 +159,7 @@ func (h *DashboardHandler) Dashboard(c echo.Context) error {
 			Deskripsi: t.Deskripsi,
 			Kategori:  kategori,
 			Tanggal:   t.Tanggal.Format("02 Jan 2006"),
-			Jumlah:    formatRupiah(t.Jumlah),
+			Jumlah:    FormatRupiah(t.Jumlah),
 		})
 	}
 
@@ -170,65 +178,7 @@ func (h *DashboardHandler) Dashboard(c echo.Context) error {
 	return c.Render(http.StatusOK, "admin/dashboard.html", data)
 }
 
-func formatTimeAgo(t time.Time) string {
-	duration := time.Since(t)
-
-	if duration.Minutes() < 1 {
-		return "Baru saja"
-	} else if duration.Minutes() < 60 {
-		return fmt.Sprintf("%d menit yang lalu", int(duration.Minutes()))
-	} else if duration.Hours() < 24 {
-		return fmt.Sprintf("%d jam yang lalu", int(duration.Hours()))
-	} else if duration.Hours() < 48 {
-		return "Kemarin"
-	} else {
-		return t.Format("02 Jan 2006")
-	}
-}
-
-func getInitials(name string) string {
-	if len(name) < 2 {
-		return name
-	}
-	parts := splitWords(name)
-	if len(parts) >= 2 {
-		return string(parts[0][0]) + string(parts[1][0])
-	}
-	return name[:2]
-}
-
-func splitWords(s string) []string {
-	var words []string
-	word := ""
-	for _, r := range s {
-		if r == ' ' {
-			if word != "" {
-				words = append(words, word)
-				word = ""
-			}
-		} else {
-			word += string(r)
-		}
-	}
-	if word != "" {
-		words = append(words, word)
-	}
-	return words
-}
-
-func formatRupiah(amount float64) string {
-	amountInt := int64(amount)
-	str := fmt.Sprintf("%d", amountInt)
-
-	var result []byte
-	n := 0
-	for i := len(str) - 1; i >= 0; i-- {
-		if n > 0 && n%3 == 0 {
-			result = append([]byte{'.'}, result...)
-		}
-		result = append([]byte{str[i]}, result...)
-		n++
-	}
-
-	return string(result)
-}
+// Shim functions — delegate ke helpers.go (DRY)
+func formatTimeAgo(t time.Time) string   { return FormatTimeAgo(t) }
+func getInitials(name string) string     { return GetInitials(name) }
+func formatRupiah(amount float64) string { return FormatRupiah(amount) }

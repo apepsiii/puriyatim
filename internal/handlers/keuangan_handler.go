@@ -76,68 +76,22 @@ type KasTransaction struct {
 	StatusCSS   string
 }
 
-func formatPercentChange(change float64) string {
-	if change == 0 {
-		return "0%"
-	}
+func formatPercentChange(change float64) string { return FormatPercentChange(change) }
 
-	sign := ""
-	if change > 0 {
-		sign = "+"
-	}
+func getChangeCSS(change float64, isPemasukan bool) string { return GetChangeCSS(change, isPemasukan) }
 
-	return sign + strconv.FormatFloat(change, 'f', 1, 64) + "%"
+func getChangeIcon(change float64) string { return GetChangeIcon(change) }
+
+func formatMonthYear(t time.Time) string { return FormatMonthYear(t) }
+
+func generateMonthOptions() []MonthOption { return GenerateMonthOptions() }
+
+func statusLabel(status models.StatusVerifikasiPemasukan) string {
+	return StatusVerifikasiLabel(status)
 }
 
-func getChangeCSS(change float64, isPemasukan bool) string {
-	if change > 0 {
-		if isPemasukan {
-			return "text-emerald-600"
-		}
-		return "text-red-500"
-	} else if change < 0 {
-		if isPemasukan {
-			return "text-red-500"
-		}
-		return "text-emerald-600"
-	}
-	return "text-gray-500"
-}
-
-func getChangeIcon(change float64) string {
-	if change > 0 {
-		return "fa-arrow-up"
-	} else if change < 0 {
-		return "fa-arrow-down"
-	}
-	return "fa-minus"
-}
-
-func formatMonthYear(t time.Time) string {
-	months := []string{"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
-	return months[int(t.Month())-1] + " " + strconv.Itoa(t.Year())
-}
-
-func generateMonthOptions() []MonthOption {
-	now := time.Now()
-	options := make([]MonthOption, 0, 12)
-
-	months := []string{"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
-
-	for i := 0; i < 12; i++ {
-		date := now.AddDate(0, -i, 0)
-		value := date.Format("01-2006")
-		label := months[int(date.Month())-1] + " " + strconv.Itoa(date.Year())
-		current := date.Month() == now.Month() && date.Year() == now.Year()
-
-		options = append(options, MonthOption{
-			Value:   value,
-			Label:   label,
-			Current: current,
-		})
-	}
-
-	return options
+func statusCSS(status models.StatusVerifikasiPemasukan) string {
+	return StatusVerifikasiCSS(status)
 }
 
 func (h *KeuanganHandler) BukuKas(c echo.Context) error {
@@ -170,24 +124,6 @@ func (h *KeuanganHandler) BukuKas(c echo.Context) error {
 
 	kasTransactions := make([]KasTransaction, 0, len(transactions))
 	for _, t := range transactions {
-		var kategoriCSS string
-		if t.Type == "masuk" {
-			switch t.Kategori {
-			case "Zakat":
-				kategoriCSS = "bg-purple-50 text-purple-700 border border-purple-100"
-			case "Infaq":
-				kategoriCSS = "bg-blue-50 text-blue-700 border border-blue-100"
-			case "Sedekah":
-				kategoriCSS = "bg-emerald-50 text-emerald-700 border border-emerald-100"
-			case "Wakaf":
-				kategoriCSS = "bg-amber-50 text-amber-700 border border-amber-100"
-			default:
-				kategoriCSS = "bg-gray-50 text-gray-700 border border-gray-100"
-			}
-		} else {
-			kategoriCSS = "bg-orange-50 text-orange-700 border border-orange-100"
-		}
-
 		kasTransactions = append(kasTransactions, KasTransaction{
 			ID:          t.ID,
 			Tanggal:     t.Tanggal.Format("02 Jan 2006"),
@@ -195,8 +131,8 @@ func (h *KeuanganHandler) BukuKas(c echo.Context) error {
 			Deskripsi:   t.Deskripsi,
 			Sumber:      t.Donatur,
 			Kategori:    t.Kategori,
-			KategoriCSS: kategoriCSS,
-			Jumlah:      formatRupiah(t.Jumlah),
+			KategoriCSS: KategoriDanaCSS(t.Type, t.Kategori),
+			Jumlah:      FormatRupiah(t.Jumlah),
 			Type:        t.Type,
 			AnakAsuh:    t.AnakAsuh,
 			Status:      string(t.Status),
@@ -218,10 +154,10 @@ func (h *KeuanganHandler) BukuKas(c echo.Context) error {
 
 	data := KeuanganPageData{
 		PageTitle:             "Buku Kas - Admin Panel",
-		User:                  &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
-		TotalSaldo:            formatRupiah(stats.TotalSaldo),
-		PemasukanBulan:        formatRupiah(stats.PemasukanBulanIni),
-		PengeluaranBulan:      formatRupiah(stats.PengeluaranBulanIni),
+		User:                  GetUserFromContext(c),
+		TotalSaldo:            FormatRupiah(stats.TotalSaldo),
+		PemasukanBulan:        FormatRupiah(stats.PemasukanBulanIni),
+		PengeluaranBulan:      FormatRupiah(stats.PengeluaranBulanIni),
 		PemasukanChange:       formatPercentChange(stats.PemasukanChange),
 		PengeluaranChange:     formatPercentChange(stats.PengeluaranChange),
 		PemasukanChangeCSS:    getChangeCSS(stats.PemasukanChange, true),
@@ -233,10 +169,10 @@ func (h *KeuanganHandler) BukuKas(c echo.Context) error {
 		SelectedMonth:         selectedMonth,
 		SelectedType:          selectedType,
 		Transactions:          kasTransactions,
-		TotalPemasukan:        formatRupiah(stats.TotalPemasukan),
-		TotalPengeluaran:      formatRupiah(stats.TotalPengeluaran),
-		FilteredPemasukan:     formatRupiah(filteredPemasukan),
-		FilteredPengeluaran:   formatRupiah(filteredPengeluaran),
+		TotalPemasukan:        FormatRupiah(stats.TotalPemasukan),
+		TotalPengeluaran:      FormatRupiah(stats.TotalPengeluaran),
+		FilteredPemasukan:     FormatRupiah(filteredPemasukan),
+		FilteredPengeluaran:   FormatRupiah(filteredPengeluaran),
 		Flash:                 flash,
 	}
 
@@ -280,7 +216,7 @@ func (h *KeuanganHandler) CatatPemasukan(c echo.Context) error {
 
 	data := PemasukanFormData{
 		PageTitle:   "Catat Pemasukan - Admin Panel",
-		User:        &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
+		User:        GetUserFromContext(c),
 		Today:       time.Now().Format("2006-01-02"),
 		DonaturList: donaturOptions,
 		Flash:       flash,
@@ -369,7 +305,7 @@ func (h *KeuanganHandler) CatatPengeluaran(c echo.Context) error {
 
 	data := PengeluaranFormData{
 		PageTitle:    "Catat Pengeluaran - Admin Panel",
-		User:         &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
+		User:         GetUserFromContext(c),
 		Today:        time.Now().Format("2006-01-02"),
 		AnakAsuhList: anakOptions,
 		Flash:        flash,
@@ -486,63 +422,51 @@ func (h *KeuanganHandler) GetTransactionDetail(c echo.Context) error {
 	if tipe == "masuk" {
 		pemasukan, err := h.service.GetPemasukanByID(id)
 		if err != nil {
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"message": "Transaksi tidak ditemukan",
-			})
+			return JSONNotFound(c, "Transaksi tidak ditemukan")
 		}
 
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": true,
-			"data": map[string]interface{}{
-				"id":           pemasukan.ID,
-				"type":         "masuk",
-				"tanggal":      pemasukan.TanggalDonasi.Format("02 January 2006"),
-				"tanggal_raw":  pemasukan.TanggalDonasi.Format("2006-01-02"),
-				"waktu":        pemasukan.CreatedAt.Format("15:04") + " WIB",
-				"nominal":      formatRupiah(pemasukan.Nominal),
-				"kategori":     string(pemasukan.KategoriDana),
-				"sumber":       pemasukan.NamaDonatur,
-				"deskripsi":    "Donasi " + string(pemasukan.KategoriDana),
-				"catatan":      pemasukan.Catatan,
-				"bukti":        pemasukan.BuktiTransaksi,
-				"status":       string(pemasukan.StatusVerifikasi),
-				"status_label": statusLabel(pemasukan.StatusVerifikasi),
-				"created_at":   pemasukan.CreatedAt.Format("02 January 2006 15:04"),
-			},
-		})
-	} else {
-		pengeluaran, err := h.service.GetPengeluaranByID(id)
-		if err != nil {
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"message": "Transaksi tidak ditemukan",
-			})
-		}
-
-		anakNama := ""
-		if pengeluaran.Anak != nil {
-			anakNama = pengeluaran.Anak.NamaLengkap
-		}
-
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": true,
-			"data": map[string]interface{}{
-				"id":          pengeluaran.ID,
-				"type":        "keluar",
-				"tanggal":     pengeluaran.TanggalPengeluaran.Format("02 January 2006"),
-				"tanggal_raw": pengeluaran.TanggalPengeluaran.Format("2006-01-02"),
-				"waktu":       pengeluaran.CreatedAt.Format("15:04") + " WIB",
-				"nominal":     formatRupiah(pengeluaran.Nominal),
-				"kategori":    "Pengeluaran",
-				"sumber":      anakNama,
-				"deskripsi":   pengeluaran.Keterangan,
-				"catatan":     "",
-				"bukti":       pengeluaran.BuktiTransaksi,
-				"created_at":  pengeluaran.CreatedAt.Format("02 January 2006 15:04"),
-			},
+		return JSONOk(c, "", map[string]interface{}{
+			"id":           pemasukan.ID,
+			"type":         "masuk",
+			"tanggal":      pemasukan.TanggalDonasi.Format("02 January 2006"),
+			"tanggal_raw":  pemasukan.TanggalDonasi.Format("2006-01-02"),
+			"waktu":        pemasukan.CreatedAt.Format("15:04") + " WIB",
+			"nominal":      FormatRupiah(pemasukan.Nominal),
+			"kategori":     string(pemasukan.KategoriDana),
+			"sumber":       pemasukan.NamaDonatur,
+			"deskripsi":    "Donasi " + string(pemasukan.KategoriDana),
+			"catatan":      pemasukan.Catatan,
+			"bukti":        pemasukan.BuktiTransaksi,
+			"status":       string(pemasukan.StatusVerifikasi),
+			"status_label": statusLabel(pemasukan.StatusVerifikasi),
+			"created_at":   pemasukan.CreatedAt.Format("02 January 2006 15:04"),
 		})
 	}
+
+	pengeluaran, err := h.service.GetPengeluaranByID(id)
+	if err != nil {
+		return JSONNotFound(c, "Transaksi tidak ditemukan")
+	}
+
+	anakNama := ""
+	if pengeluaran.Anak != nil {
+		anakNama = pengeluaran.Anak.NamaLengkap
+	}
+
+	return JSONOk(c, "", map[string]interface{}{
+		"id":          pengeluaran.ID,
+		"type":        "keluar",
+		"tanggal":     pengeluaran.TanggalPengeluaran.Format("02 January 2006"),
+		"tanggal_raw": pengeluaran.TanggalPengeluaran.Format("2006-01-02"),
+		"waktu":       pengeluaran.CreatedAt.Format("15:04") + " WIB",
+		"nominal":     FormatRupiah(pengeluaran.Nominal),
+		"kategori":    "Pengeluaran",
+		"sumber":      anakNama,
+		"deskripsi":   pengeluaran.Keterangan,
+		"catatan":     "",
+		"bukti":       pengeluaran.BuktiTransaksi,
+		"created_at":  pengeluaran.CreatedAt.Format("02 January 2006 15:04"),
+	})
 }
 
 func (h *KeuanganHandler) DeleteTransaction(c echo.Context) error {
@@ -668,32 +592,7 @@ func (h *KeuanganHandler) VerifyPemasukan(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Pemasukan berhasil diverifikasi",
-	})
-}
-
-func statusLabel(status models.StatusVerifikasiPemasukan) string {
-	switch status {
-	case models.StatusVerifikasiPending:
-		return "Pending"
-	case models.StatusVerifikasiVerified:
-		return "Verified"
-	default:
-		return "Verified"
-	}
-}
-
-func statusCSS(status models.StatusVerifikasiPemasukan) string {
-	switch status {
-	case models.StatusVerifikasiPending:
-		return "bg-amber-50 text-amber-700 border border-amber-100"
-	case models.StatusVerifikasiVerified:
-		return "bg-emerald-50 text-emerald-700 border border-emerald-100"
-	default:
-		return "bg-emerald-50 text-emerald-700 border border-emerald-100"
-	}
+	return JSONOk(c, "Pemasukan berhasil diverifikasi")
 }
 
 func (h *KeuanganHandler) GetEditFormData(c echo.Context) error {

@@ -31,9 +31,10 @@ type LoginResponse struct {
 }
 
 type Claims struct {
-	ID    string               `json:"id"`
-	Email string               `json:"email"`
-	Peran models.PeranPengurus `json:"peran"`
+	ID          string               `json:"id"`
+	Email       string               `json:"email"`
+	Peran       models.PeranPengurus `json:"peran"`
+	NamaLengkap string               `json:"nama_lengkap"`
 	jwt.RegisteredClaims
 }
 
@@ -90,9 +91,10 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 func (s *AuthService) generateToken(pengurus *models.Pengurus) (string, error) {
 	// Create claims
 	claims := &Claims{
-		ID:    pengurus.ID,
-		Email: pengurus.Email,
-		Peran: pengurus.Peran,
+		ID:          pengurus.ID,
+		Email:       pengurus.Email,
+		Peran:       pengurus.Peran,
+		NamaLengkap: pengurus.NamaLengkap,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(8 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),

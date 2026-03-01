@@ -95,16 +95,6 @@ func (h *JumatBerkahHandler) List(c echo.Context) error {
 	regItems := make([]JumatBerkahRegItem, 0, len(regs))
 
 	for _, reg := range regs {
-		var statusCSS string
-		switch reg.StatusApproval {
-		case models.StatusApprovalMenunggu:
-			statusCSS = "bg-orange-50 text-orange-700 border border-orange-200"
-		case models.StatusApprovalDisetujui:
-			statusCSS = "bg-emerald-50 text-emerald-700 border border-emerald-200"
-		case models.StatusApprovalDitolak:
-			statusCSS = "bg-red-50 text-red-700 border border-red-200"
-		}
-
 		namaAnak := ""
 		jenjang := ""
 		statusAnak := ""
@@ -116,7 +106,7 @@ func (h *JumatBerkahHandler) List(c echo.Context) error {
 			jenjang = reg.Anak.JenjangPendidikan
 			statusAnak = string(reg.Anak.StatusAnak)
 			wilayah = fmt.Sprintf("RT %s / RW %s", reg.Anak.RT, reg.Anak.RW)
-			initials = getInitials(namaAnak)
+			initials = GetInitials(namaAnak)
 		}
 
 		avatarBg, avatarText := getAvatarStyle(namaAnak)
@@ -128,9 +118,9 @@ func (h *JumatBerkahHandler) List(c echo.Context) error {
 			Jenjang:     jenjang,
 			StatusAnak:  statusAnak,
 			Wilayah:     wilayah,
-			SubmittedAt: formatTimeAgo(reg.WaktuSubmit),
+			SubmittedAt: FormatTimeAgo(reg.WaktuSubmit),
 			Status:      reg.StatusApproval.ToServiceStatus(),
-			StatusCSS:   statusCSS,
+			StatusCSS:   ApprovalStatusCSS(reg.StatusApproval),
 			Initials:    initials,
 			AvatarBg:    avatarBg,
 			AvatarText:  avatarText,
@@ -201,40 +191,23 @@ func (h *JumatBerkahHandler) Approve(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Pendaftar berhasil disetujui",
-	})
+	return JSONOk(c, "Pendaftar berhasil disetujui")
 }
 
 func (h *JumatBerkahHandler) Reject(c echo.Context) error {
 	id := c.Param("id")
 
-	err := h.service.RejectRegistration(id)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+	if err := h.service.RejectRegistration(id); err != nil {
+		return JSONBadRequest(c, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Pendaftar berhasil ditolak",
-	})
+	return JSONOk(c, "Pendaftar berhasil ditolak")
 }
 
 func (h *JumatBerkahHandler) BulkApprove(c echo.Context) error {
-	ids := c.FormValue("ids")
-	var idList []string
-	for _, id := range splitIDs(ids) {
-		if id != "" {
-			idList = append(idList, id)
-		}
-	}
-
+	idList := filterEmpty(splitIDs(c.FormValue("ids")))
 	count := h.service.ApproveMultiple(idList)
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": strconv.Itoa(count) + " pendaftar berhasil disetujui",
 		"count":   count,
@@ -242,16 +215,9 @@ func (h *JumatBerkahHandler) BulkApprove(c echo.Context) error {
 }
 
 func (h *JumatBerkahHandler) BulkReject(c echo.Context) error {
-	ids := c.FormValue("ids")
-	var idList []string
-	for _, id := range splitIDs(ids) {
-		if id != "" {
-			idList = append(idList, id)
-		}
-	}
-
+	idList := filterEmpty(splitIDs(c.FormValue("ids")))
 	count := h.service.RejectMultiple(idList)
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": strconv.Itoa(count) + " pendaftar berhasil ditolak",
 		"count":   count,
@@ -260,7 +226,7 @@ func (h *JumatBerkahHandler) BulkReject(c echo.Context) error {
 
 func (h *JumatBerkahHandler) ApproveAll(c echo.Context) error {
 	count := h.service.ApproveAllPending()
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": strconv.Itoa(count) + " pendaftar berhasil disetujui",
 		"count":   count,
@@ -270,46 +236,28 @@ func (h *JumatBerkahHandler) ApproveAll(c echo.Context) error {
 func (h *JumatBerkahHandler) UpdateQuota(c echo.Context) error {
 	quota, err := strconv.Atoi(c.FormValue("quota"))
 	if err != nil || quota < 1 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Kuota tidak valid",
-		})
+		return JSONBadRequest(c, "Kuota tidak valid")
 	}
 
-	err = h.service.UpdateQuota(quota)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+	if err = h.service.UpdateQuota(quota); err != nil {
+		return JSONBadRequest(c, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Kuota berhasil diperbarui",
-	})
+	return JSONOk(c, "Kuota berhasil diperbarui")
 }
 
 func (h *JumatBerkahHandler) ToggleForm(c echo.Context) error {
 	open := c.FormValue("open") == "true"
 
-	err := h.service.ToggleForm(open)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+	if err := h.service.ToggleForm(open); err != nil {
+		return JSONBadRequest(c, err.Error())
 	}
 
 	status := "ditutup"
 	if open {
 		status = "dibuka"
 	}
-
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Form pendaftaran berhasil " + status,
-	})
+	return JSONOk(c, "Form pendaftaran berhasil "+status)
 }
 
 func (h *JumatBerkahHandler) ManualRegister(c echo.Context) error {
@@ -319,31 +267,28 @@ func (h *JumatBerkahHandler) ManualRegister(c echo.Context) error {
 
 	idList := splitIDs(ids)
 	if len(idList) == 0 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Pilih minimal satu anak asuh",
-		})
+		return JSONBadRequest(c, "Pilih minimal satu anak asuh")
 	}
 
 	count := 0
-	var errors []string
+	var regErrors []string
 	for _, id := range idList {
 		if _, err := h.service.CreateManualRegistration(id, autoApprove, catatan); err != nil {
-			errors = append(errors, fmt.Sprintf("%s: %s", id, err.Error()))
+			regErrors = append(regErrors, fmt.Sprintf("%s: %s", id, err.Error()))
 			continue
 		}
 		count++
 	}
 
 	if count == 0 {
-		message := "Tidak ada pendaftaran manual yang berhasil diproses"
-		if len(errors) > 0 {
-			message = errors[0]
+		msg := "Tidak ada pendaftaran manual yang berhasil diproses"
+		if len(regErrors) > 0 {
+			msg = regErrors[0]
 		}
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+		return JSONWithFields(c, map[string]interface{}{
 			"success": false,
-			"message": message,
-			"errors":  errors,
+			"message": msg,
+			"errors":  regErrors,
 		})
 	}
 
@@ -352,46 +297,26 @@ func (h *JumatBerkahHandler) ManualRegister(c echo.Context) error {
 		actionText = "berhasil didaftarkan manual dan langsung disetujui"
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": strconv.Itoa(count) + " anak asuh " + actionText,
 		"count":   count,
-		"errors":  errors,
+		"errors":  regErrors,
 	})
 }
 
-func getAvatarStyle(name string) (bg, text string) {
-	colors := []struct{ bg, text string }{
-		{"bg-emerald-100", "text-emerald-600"},
-		{"bg-purple-100", "text-purple-600"},
-		{"bg-indigo-100", "text-indigo-600"},
-		{"bg-pink-100", "text-pink-600"},
-		{"bg-teal-100", "text-teal-600"},
-		{"bg-blue-100", "text-blue-600"},
-	}
-	sum := 0
-	for _, c := range name {
-		sum += int(c)
-	}
-	style := colors[sum%len(colors)]
-	return style.bg, style.text
+// splitIDs memecah string berisi ID yang dipisah koma menjadi slice.
+func splitIDs(s string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool { return r == ',' })
 }
 
-func splitIDs(s string) []string {
-	var ids []string
-	current := ""
-	for _, r := range s {
-		if r == ',' {
-			if current != "" {
-				ids = append(ids, strings.TrimSpace(current))
-				current = ""
-			}
-		} else {
-			current += string(r)
+// filterEmpty membuang string kosong dari slice.
+func filterEmpty(ss []string) []string {
+	result := ss[:0]
+	for _, s := range ss {
+		if t := strings.TrimSpace(s); t != "" {
+			result = append(result, t)
 		}
 	}
-	if current != "" {
-		ids = append(ids, strings.TrimSpace(current))
-	}
-	return ids
+	return result
 }

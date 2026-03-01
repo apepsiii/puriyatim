@@ -19,29 +19,9 @@ func NewAuthMiddleware(authService *services.AuthService) *AuthMiddleware {
 	}
 }
 
-// RequireAuth middleware to check if user is authenticated
-func (m *AuthMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		token, err := extractToken(c)
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": err.Error(),
-			})
-		}
-
-		claims, err := m.authService.ValidateToken(token)
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "invalid token",
-			})
-		}
-
-		setUserContext(c, claims)
-
-		return next(c)
-	}
-}
-
+// RequireAdminSession memvalidasi JWT token dari cookie atau header Authorization,
+// dan menyimpan informasi user ke context Echo.
+// Jika token tidak valid, redirect ke halaman login (atau JSON 401 untuk API request).
 func (m *AuthMiddleware) RequireAdminSession(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token, err := extractToken(c)
@@ -129,6 +109,7 @@ func setUserContext(c echo.Context, claims *services.Claims) {
 	c.Set("user_email", claims.Email)
 	c.Set("user_role", claims.Peran)
 	c.Set("user_role_str", string(claims.Peran))
+	c.Set("user_nama", claims.NamaLengkap)
 }
 
 func unauthorized(c echo.Context) error {
