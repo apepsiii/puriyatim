@@ -132,6 +132,7 @@ func main() {
 	var artikelRepo *repository.ArtikelRepository
 	var pengaturanRepo *repository.PengaturanRepository
 	var galeriRepo *repository.GaleriRepository
+	var rekeningRepo *repository.RekeningDonasiRepository
 
 	if db != nil {
 		pengurusRepo = repository.NewPengurusRepository(db.DB)
@@ -141,6 +142,7 @@ func main() {
 		artikelRepo = repository.NewArtikelRepository(db.DB)
 		pengaturanRepo = repository.NewPengaturanRepository(db.DB)
 		galeriRepo = repository.NewGaleriRepository(db.DB)
+		rekeningRepo = repository.NewRekeningDonasiRepository(db.DB)
 		defer db.Close()
 	}
 
@@ -151,6 +153,7 @@ func main() {
 	artikelService := services.NewArtikelService(artikelRepo)
 	pengaturanService := services.NewPengaturanService(pengaturanRepo)
 	galeriService := services.NewGaleriService(galeriRepo)
+	rekeningService := services.NewRekeningDonasiService(rekeningRepo)
 	exportImportService := services.NewExportImportService(anakAsuhService)
 
 	dashboardHandler := handlers.NewDashboardHandler(cfg, anakAsuhService, keuanganService, jumatBerkahService)
@@ -160,7 +163,7 @@ func main() {
 	anakAsuhHandler := handlers.NewAnakAsuhHandler(anakAsuhService, keuanganService, jumatBerkahService, exportImportService)
 	keuanganHandler := handlers.NewKeuanganHandler(keuanganService, anakAsuhService)
 	artikelHandler := handlers.NewArtikelHandler(artikelService)
-	pengaturanHandler := handlers.NewPengaturanHandler(pengaturanService)
+	pengaturanHandler := handlers.NewPengaturanHandler(pengaturanService, rekeningService)
 	jumatBerkahHandler := handlers.NewJumatBerkahHandler(jumatBerkahService)
 	galeriHandler := handlers.NewGaleriHandler(galeriService, pengaturanService)
 
@@ -195,6 +198,7 @@ func main() {
 	{
 		admin.GET("/dashboard", dashboardHandler.Dashboard)
 		admin.GET("/logout", authHandler.Logout)
+		admin.GET("/session-info", authmw.SessionInfo)
 
 		admin.GET("/jumat-berkah", jumatBerkahHandler.List)
 		admin.POST("/jumat-berkah/:id/approve", jumatBerkahHandler.Approve)
@@ -247,6 +251,9 @@ func main() {
 
 		admin.GET("/pengaturan", pengaturanHandler.Page)
 		admin.POST("/pengaturan", pengaturanHandler.Save)
+		admin.GET("/pengaturan/rekening", pengaturanHandler.ListRekening)
+		admin.POST("/pengaturan/rekening", pengaturanHandler.CreateRekening)
+		admin.DELETE("/pengaturan/rekening/:id", pengaturanHandler.DeleteRekening)
 	}
 
 	port := ":" + cfg.Port

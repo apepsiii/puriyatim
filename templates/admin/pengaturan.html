@@ -97,6 +97,11 @@
             </div>
             
             <div class="flex items-center gap-4">
+                <!-- Session timer badge -->
+                <span id="sessionBadge" class="inline-flex items-center gap-1 text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-1 rounded-full">
+                    <i class="fas fa-clock text-xs"></i>
+                    <span id="sessionLabel">--</span>
+                </span>
                 <a href="/" class="text-sm text-primary hover:text-primary_dark font-medium hidden sm:block">
                     <i class="fas fa-external-link-alt mr-1"></i> Lihat Web Publik
                 </a>
@@ -245,24 +250,93 @@
                 </div>
 
                 <div class="p-6 sm:p-8 border-b border-gray-100">
-                    <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center">
+                    <h3 class="text-lg font-bold text-gray-800 mb-1 flex items-center">
                         <i class="fas fa-building-columns text-primary mr-2"></i> Tujuan Transfer Donasi
                     </h3>
+                    <p class="text-sm text-gray-500 mb-5">Daftar rekening bank yang akan ditampilkan kepada donatur di halaman publik.</p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Rekening BSI</label>
-                            <input type="text" name="rekening_bsi" value="{{.RekeningBSI}}" placeholder="Contoh: 7123456789" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                    <!-- Daftar rekening yang sudah ada -->
+                    <div id="rekeningList" class="space-y-3 mb-4">
+                        {{range .RekeningList}}
+                        <div class="rekening-item flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3" data-id="{{.ID}}">
+                            <!-- Logo bank -->
+                            <div class="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
+                                <img src="/static/images/banks/{{.LogoBank}}.png"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+                                     alt="{{.NamaBank}}" class="w-10 h-10 object-contain">
+                                <span style="display:none" class="text-xs font-bold text-gray-500 w-full h-full flex items-center justify-center">{{slice .NamaBank 0 3}}</span>
+                            </div>
+                            <!-- Info rekening -->
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-gray-800">{{.NamaBank}}</p>
+                                <p class="text-sm text-gray-600 font-mono tracking-wide">{{.NomorRekening}}</p>
+                                <p class="text-xs text-gray-500">a.n. {{.AtasNama}}</p>
+                            </div>
+                            <!-- Hapus -->
+                            <button type="button" onclick="deleteRekening({{.ID}})"
+                                    class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Hapus rekening ini">
+                                <i class="fas fa-trash-alt text-sm"></i>
+                            </button>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Rekening Mandiri</label>
-                            <input type="text" name="rekening_mandiri" value="{{.RekeningMandiri}}" placeholder="Contoh: 1400012345678" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+                        {{end}}
+                        {{if not .RekeningList}}
+                        <p id="emptyState" class="text-sm text-gray-400 italic text-center py-4">Belum ada rekening. Tambahkan di bawah.</p>
+                        {{end}}
+                    </div>
+
+                    <!-- Form tambah rekening baru -->
+                    <div id="addRekeningForm" class="hidden border border-dashed border-emerald-300 bg-emerald-50/50 rounded-xl p-4 space-y-3">
+                        <p class="text-sm font-semibold text-gray-700 mb-2"><i class="fas fa-plus-circle text-primary mr-1"></i>Tambah Rekening Baru</p>
+
+                        <!-- Nama Bank (Dropdown + search) -->
+                        <div class="relative" x-data="bankDropdown()">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Nama Bank <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="text" id="bankSearch" placeholder="Cari atau ketik nama bank..."
+                                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full pl-10 p-2.5 outline-none"
+                                       oninput="filterBanks(this.value)" onfocus="openBankDropdown()" autocomplete="off">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <i class="fas fa-university text-gray-400"></i>
+                                </div>
+                                <input type="hidden" id="selectedBankSlug">
+                            </div>
+                            <!-- Dropdown list -->
+                            <div id="bankDropdown"
+                                 class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto hidden">
+                            </div>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Pemilik Rekening</label>
-                            <input type="text" name="nama_rekening" value="{{.NamaRekening}}" placeholder="Contoh: Puri Yatim" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Nomor Rekening <span class="text-red-500">*</span></label>
+                                <input type="text" id="newNomorRekening" placeholder="Contoh: 7123456789"
+                                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Atas Nama <span class="text-red-500">*</span></label>
+                                <input type="text" id="newAtasNama" placeholder="Contoh: Puri Yatim"
+                                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" onclick="submitNewRekening()"
+                                    class="px-4 py-2 bg-primary hover:bg-primary_dark text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-1.5">
+                                <i class="fas fa-save"></i> Simpan Rekening
+                            </button>
+                            <button type="button" onclick="toggleAddForm(false)"
+                                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-colors">
+                                Batal
+                            </button>
                         </div>
                     </div>
+
+                    <!-- Tombol + tambah rekening -->
+                    <button type="button" id="btnTambahRekening" onclick="toggleAddForm(true)"
+                            class="mt-3 flex items-center gap-2 text-sm font-medium text-primary hover:text-primary_dark border border-dashed border-primary hover:border-primary_dark bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors w-full justify-center">
+                        <i class="fas fa-plus-circle"></i> Tambah Rekening Bank
+                    </button>
                 </div>
 
                 <div class="p-6 bg-white flex items-center justify-end gap-3 rounded-b-2xl">
@@ -278,6 +352,7 @@
     </div>
 
     <script>
+        /* ===== SIDEBAR ===== */
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileOverlay');
@@ -285,51 +360,185 @@
             overlay.classList.toggle('hidden');
         }
 
+        /* ===== DAFTAR BANK ===== */
+        const BANK_LIST = [
+            { name: 'BSI (Bank Syariah Indonesia)', slug: 'bsi' },
+            { name: 'BRI (Bank Rakyat Indonesia)', slug: 'bri' },
+            { name: 'BNI (Bank Negara Indonesia)', slug: 'bni' },
+            { name: 'Bank Mandiri', slug: 'mandiri' },
+            { name: 'BCA (Bank Central Asia)', slug: 'bca' },
+            { name: 'Bank BTN', slug: 'btn' },
+            { name: 'Bank CIMB Niaga', slug: 'cimb' },
+            { name: 'Bank Danamon', slug: 'danamon' },
+            { name: 'Bank Permata', slug: 'permata' },
+            { name: 'Bank Muamalat', slug: 'muamalat' },
+            { name: 'Bank Mega', slug: 'mega' },
+            { name: 'Bank BPD / Bank Daerah', slug: 'bpd' },
+            { name: 'Lainnya', slug: 'other' },
+        ];
+
+        let filteredBanks = [...BANK_LIST];
+        let selectedBank = null;
+
+        function filterBanks(query) {
+            const q = query.toLowerCase();
+            filteredBanks = BANK_LIST.filter(b => b.name.toLowerCase().includes(q));
+            renderBankDropdown();
+            openBankDropdown();
+        }
+
+        function renderBankDropdown() {
+            const dd = document.getElementById('bankDropdown');
+            if (filteredBanks.length === 0) {
+                dd.innerHTML = '<p class="text-sm text-gray-400 px-4 py-3">Bank tidak ditemukan</p>';
+                return;
+            }
+            dd.innerHTML = filteredBanks.map(b => `
+                <button type="button" onclick="selectBank('${b.slug}','${b.name}')"
+                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-primary flex items-center gap-3 transition-colors">
+                    <div class="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <img src="/static/images/banks/${b.slug}.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
+                             class="w-7 h-7 object-contain" alt="">
+                        <span style="display:none" class="text-xs font-bold text-gray-500">${b.slug.substring(0,3).toUpperCase()}</span>
+                    </div>
+                    ${b.name}
+                </button>
+            `).join('');
+        }
+
+        function openBankDropdown() {
+            filteredBanks = BANK_LIST.filter(b => b.name.toLowerCase().includes(document.getElementById('bankSearch').value.toLowerCase()));
+            renderBankDropdown();
+            document.getElementById('bankDropdown').classList.remove('hidden');
+        }
+
+        function closeBankDropdown() {
+            setTimeout(() => document.getElementById('bankDropdown').classList.add('hidden'), 200);
+        }
+
+        function selectBank(slug, name) {
+            selectedBank = { slug, name };
+            document.getElementById('bankSearch').value = name;
+            document.getElementById('selectedBankSlug').value = slug;
+            document.getElementById('bankDropdown').classList.add('hidden');
+        }
+
+        document.getElementById('bankSearch')?.addEventListener('blur', closeBankDropdown);
+
+        /* ===== TOGGLE FORM TAMBAH ===== */
+        function toggleAddForm(show) {
+            document.getElementById('addRekeningForm').classList.toggle('hidden', !show);
+            document.getElementById('btnTambahRekening').classList.toggle('hidden', show);
+            if (show) document.getElementById('bankSearch').focus();
+        }
+
+        /* ===== SUBMIT REKENING BARU ===== */
+        async function submitNewRekening() {
+            const namaBank = document.getElementById('bankSearch').value.trim();
+            const logoBank = document.getElementById('selectedBankSlug').value.trim() || 'other';
+            const nomor = document.getElementById('newNomorRekening').value.trim();
+            const atasNama = document.getElementById('newAtasNama').value.trim();
+
+            if (!namaBank || !nomor || !atasNama) {
+                Swal.fire({ icon:'warning', title:'Data Tidak Lengkap', text:'Isi semua kolom rekening.', confirmButtonColor:'#10b981' });
+                return;
+            }
+
+            try {
+                const res = await fetch('/admin/pengaturan/rekening', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nama_bank: namaBank, logo_bank: logoBank, nomor_rekening: nomor, atas_nama: atasNama, urutan: 99 })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    await Swal.fire({ icon:'success', title:'Berhasil', text:'Rekening ditambahkan.', confirmButtonColor:'#10b981', timer:1500, showConfirmButton:false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon:'error', title:'Gagal', text: result.message, confirmButtonColor:'#ef4444' });
+                }
+            } catch(e) {
+                Swal.fire({ icon:'error', title:'Error', text:'Gagal terhubung ke server.', confirmButtonColor:'#ef4444' });
+            }
+        }
+
+        /* ===== HAPUS REKENING ===== */
+        async function deleteRekening(id) {
+            const conf = await Swal.fire({
+                icon:'warning', title:'Hapus Rekening?', text:'Data rekening ini akan dihapus permanen.',
+                showCancelButton:true, confirmButtonColor:'#ef4444', cancelButtonColor:'#6b7280',
+                confirmButtonText:'Ya, Hapus', cancelButtonText:'Batal'
+            });
+            if (!conf.isConfirmed) return;
+            try {
+                const res = await fetch('/admin/pengaturan/rekening/' + id, { method:'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    await Swal.fire({ icon:'success', title:'Dihapus', timer:1000, showConfirmButton:false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon:'error', title:'Gagal', text: result.message, confirmButtonColor:'#ef4444' });
+                }
+            } catch(e) {
+                Swal.fire({ icon:'error', title:'Error', text:'Gagal terhubung ke server.', confirmButtonColor:'#ef4444' });
+            }
+        }
+
+        /* ===== FORM PENGATURAN UMUM ===== */
         const pengaturanForm = document.getElementById('pengaturanForm');
         pengaturanForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-
             const submitButton = pengaturanForm.querySelector('button[type="submit"]');
             const originalButtonHTML = submitButton.innerHTML;
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-
             try {
                 const formData = new FormData(pengaturanForm);
-                const response = await fetch('/admin/pengaturan', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch('/admin/pengaturan', { method: 'POST', body: formData });
                 const result = await response.json();
-
                 if (result.success) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: result.message || 'Pengaturan berhasil disimpan',
-                        confirmButtonColor: '#10b981'
-                    });
+                    await Swal.fire({ icon:'success', title:'Berhasil', text: result.message || 'Pengaturan berhasil disimpan', confirmButtonColor:'#10b981' });
                 } else {
-                    await Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: result.message || 'Terjadi kesalahan saat menyimpan pengaturan',
-                        confirmButtonColor: '#ef4444'
-                    });
+                    await Swal.fire({ icon:'error', title:'Gagal', text: result.message || 'Terjadi kesalahan', confirmButtonColor:'#ef4444' });
                 }
             } catch (error) {
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Terjadi gangguan koneksi atau server.',
-                    confirmButtonColor: '#ef4444'
-                });
+                await Swal.fire({ icon:'error', title:'Error', text:'Terjadi gangguan koneksi atau server.', confirmButtonColor:'#ef4444' });
             } finally {
                 submitButton.disabled = false;
                 submitButton.innerHTML = originalButtonHTML;
             }
         });
+
+        /* ===== SESSION TIMER ===== */
+        (function sessionTimer() {
+            const badge = document.getElementById('sessionBadge');
+            const label = document.getElementById('sessionLabel');
+            if (!badge) return;
+
+            async function tick() {
+                try {
+                    const r = await fetch('/admin/session-info');
+                    if (r.status === 401) { location.href='/admin/login?error=Sesi berakhir'; return; }
+                    const data = await r.json();
+                    const secs = data.remaining_seconds || 0;
+                    const h = Math.floor(secs/3600);
+                    const m = Math.floor((secs%3600)/60);
+                    const display = h > 0 ? `${h}j ${m}m` : `${m}m`;
+                    label.textContent = display;
+
+                    if (secs < 300) {   // < 5 menit: merah
+                        badge.className = 'inline-flex items-center gap-1 text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full';
+                    } else if (secs < 1800) { // < 30 menit: kuning
+                        badge.className = 'inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-1 rounded-full';
+                    } else {
+                        badge.className = 'inline-flex items-center gap-1 text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-1 rounded-full';
+                    }
+                } catch(e) {}
+            }
+
+            tick();
+            setInterval(tick, 60000);
+        })();
     </script>
 </body>
 </html>

@@ -115,6 +115,57 @@ func (s *AuthService) generateToken(pengurus *models.Pengurus) (string, error) {
 	return tokenString, nil
 }
 
+// GenerateTokenWithDuration membuat JWT dengan durasi kustom (mis. untuk "ingat saya").
+func (s *AuthService) GenerateTokenWithDuration(pengurus *models.Pengurus, duration time.Duration) (string, error) {
+	claims := &Claims{
+		ID:          pengurus.ID,
+		Email:       pengurus.Email,
+		Peran:       pengurus.Peran,
+		NamaLengkap: pengurus.NamaLengkap,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-1 * time.Minute).UTC()),
+			Issuer:    "puri-yatim-admin",
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(s.jwtSecret))
+}
+
+// RefreshTokenIfNeeded menerbitkan token baru jika sisa validitas < threshold.
+// Mengembalikan token baru (atau string kosong jika tidak perlu diperbarui) dan error.
+func (s *AuthService) RefreshTokenIfNeeded(tokenString string, threshold time.Duration) (string, time.Duration, error) {
+	claims, err := s.ValidateToken(tokenString)
+	if err != nil {
+		return "", 0, err
+	}
+
+	remaining := time.Until(claims.ExpiresAt.Time)
+	if remaining > threshold {
+		return "", remaining, nil // belum perlu diperbarui
+	}
+
+	// Terbitkan token baru dengan masa aktif sama seperti sisa semula + threshold
+	// (tidak lebih dari 8 jam)
+	newDuration := threshold * 2
+	if newDuration > 8*time.Hour {
+		newDuration = 8 * time.Hour
+	}
+
+	pengurus := &models.Pengurus{
+		ID:          claims.ID,
+		Email:       claims.Email,
+		Peran:       claims.Peran,
+		NamaLengkap: claims.NamaLengkap,
+	}
+	newToken, err := s.GenerateTokenWithDuration(pengurus, newDuration)
+	if err != nil {
+		return "", remaining, err
+	}
+	return newToken, newDuration, nil
+}
+
 func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	// Parse token
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {

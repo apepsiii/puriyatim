@@ -2,11 +2,18 @@ package middleware
 
 import (
 	"net/http"
+	"puriyatim-app/internal/handlers"
 	"puriyatim-app/internal/models"
 	"puriyatim-app/internal/services"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
+)
+
+const (
+	// idleTimeout: jika token tersisa < 2 jam, otomatis diperbarui (sliding session)
+	slidingThreshold = 2 * time.Hour
 )
 
 type AuthMiddleware struct {
@@ -20,8 +27,8 @@ func NewAuthMiddleware(authService *services.AuthService) *AuthMiddleware {
 }
 
 // RequireAdminSession memvalidasi JWT token dari cookie atau header Authorization,
-// dan menyimpan informasi user ke context Echo.
-// Jika token tidak valid, redirect ke halaman login (atau JSON 401 untuk API request).
+// menyimpan informasi user ke context Echo, dan melakukan sliding session refresh
+// jika sisa waktu token < slidingThreshold.
 func (m *AuthMiddleware) RequireAdminSession(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token, err := extractToken(c)
@@ -32,6 +39,16 @@ func (m *AuthMiddleware) RequireAdminSession(next echo.HandlerFunc) echo.Handler
 		claims, err := m.authService.ValidateToken(token)
 		if err != nil {
 			return unauthorized(c)
+		}
+
+		// Sliding session: perbarui cookie jika sisa < slidingThreshold
+		newToken, newDuration, refreshErr := m.authService.RefreshTokenIfNeeded(token, slidingThreshold)
+		if refreshErr == nil && newToken != "" {
+			handlers.SetAuthCookie(c, newToken, newDuration)
+			// parse ulang claims dari token baru agar ExpiresAt terbaru
+			if nc, e := m.authService.ValidateToken(newToken); e == nil {
+				claims = nc
+			}
 		}
 
 		setUserContext(c, claims)
@@ -110,6 +127,7 @@ func setUserContext(c echo.Context, claims *services.Claims) {
 	c.Set("user_role", claims.Peran)
 	c.Set("user_role_str", string(claims.Peran))
 	c.Set("user_nama", claims.NamaLengkap)
+	c.Set("token_expires_at", claims.ExpiresAt.Unix())
 }
 
 func unauthorized(c echo.Context) error {
@@ -125,4 +143,17 @@ func unauthorized(c echo.Context) error {
 		})
 	}
 	return c.Redirect(http.StatusFound, "/admin/login?error=Sesi berakhir, silakan login kembali")
+}
+
+// SessionInfo mengembalikan info sesi aktif untuk endpoint /api/admin/session-info.
+func SessionInfo(c echo.Context) error {
+	expiresAt, _ := c.Get("token_expires_at").(int64)
+	remaining := time.Until(time.Unix(expiresAt, 0))
+	if remaining < 0 {
+		remaining = 0
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"expires_at":        expiresAt,
+		"remaining_seconds": int(remaining.Seconds()),
+	})
 }

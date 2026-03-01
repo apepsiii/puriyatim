@@ -119,7 +119,12 @@
                 <h2 class="text-xl font-semibold text-gray-800 hidden sm:block">{{.PageTitle}}</h2>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+                <!-- Session timer badge (diisi oleh JS) -->
+                <span id="sessionBadge" class="inline-flex items-center gap-1 text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-1 rounded-full" title="Sisa waktu sesi">
+                    <i class="fas fa-clock text-xs"></i>
+                    <span id="sessionLabel">--</span>
+                </span>
                 <a href="/" class="text-gray-500 hover:text-primary transition-colors flex items-center gap-2">
                     <i class="fas fa-external-link-alt"></i>
                     <span class="hidden sm:inline text-sm">Lihat Website</span>
@@ -159,6 +164,73 @@
                     });
             });
         }
+    </script>
+
+    <!-- Session Manager: sliding session + auto-logout warning -->
+    <script>
+    (function() {
+        const WARNING_SECS = 300;   // 5 menit sebelum expired: tampilkan warning
+        let warnShown = false;
+
+        async function checkSession() {
+            try {
+                const r = await fetch('/admin/session-info', { cache: 'no-store' });
+                if (r.status === 401) {
+                    location.href = '/admin/login?error=Sesi berakhir, silakan login kembali';
+                    return;
+                }
+                const data = await r.json();
+                const secs = data.remaining_seconds || 0;
+
+                // Update semua badge sesi yang ada di halaman ini
+                document.querySelectorAll('[id="sessionLabel"]').forEach(el => {
+                    const h = Math.floor(secs / 3600);
+                    const m = Math.floor((secs % 3600) / 60);
+                    el.textContent = h > 0 ? h + 'j ' + m + 'm' : m + 'm';
+                });
+                document.querySelectorAll('[id="sessionBadge"]').forEach(el => {
+                    if (secs < 300) {
+                        el.className = 'inline-flex items-center gap-1 text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full';
+                    } else if (secs < 1800) {
+                        el.className = 'inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-1 rounded-full';
+                    } else {
+                        el.className = 'inline-flex items-center gap-1 text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-1 rounded-full';
+                    }
+                });
+
+                if (secs <= 0) {
+                    location.href = '/admin/login?error=Sesi berakhir, silakan login kembali';
+                    return;
+                }
+
+                if (secs <= WARNING_SECS && !warnShown) {
+                    warnShown = true;
+                    const m = Math.ceil(secs / 60);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sesi Hampir Berakhir',
+                            html: `Sesi Anda akan berakhir dalam <b>${m} menit</b>.<br>Simpan pekerjaan Anda segera.`,
+                            confirmButtonText: 'Tetap Login',
+                            confirmButtonColor: '#10b981',
+                            showCancelButton: true,
+                            cancelButtonText: 'Logout',
+                            cancelButtonColor: '#6b7280',
+                        }).then(result => {
+                            if (result.isDismissed) {
+                                location.href = '/admin/logout';
+                            } else {
+                                warnShown = false; // reset agar bisa muncul lagi jika perlu
+                            }
+                        });
+                    }
+                }
+            } catch(e) {}
+        }
+
+        checkSession();
+        setInterval(checkSession, 60000); // cek setiap 1 menit
+    })();
     </script>
 </body>
 </html>

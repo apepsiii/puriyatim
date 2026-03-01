@@ -64,6 +64,11 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	cookieDuration := 8 * time.Hour
 	if remember {
 		cookieDuration = 7 * 24 * time.Hour
+		// Buat ulang token dengan durasi 7 hari
+		longToken, err := h.authService.GenerateTokenWithDuration(response.Pengurus, cookieDuration)
+		if err == nil {
+			response.Token = longToken
+		}
 	}
 
 	SetAuthCookie(c, response.Token, cookieDuration)
