@@ -46,7 +46,7 @@ func (h *PengaturanHandler) Page(c echo.Context) error {
 
 	data := PengaturanData{
 		PageTitle:   "Pengaturan Web - Admin Panel",
-		User:        &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
+		User:        GetUserFromContext(c),
 		NamaLembaga: setting.NamaLembaga,
 		Deskripsi:   setting.DeskripsiTentangKami,
 		Whatsapp:    setting.NomorWA,
@@ -89,10 +89,7 @@ func (h *PengaturanHandler) Save(c echo.Context) error {
 
 	setting, err := h.service.Get()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal memuat data pengaturan",
-		})
+		return JSONInternalError(c, "Gagal memuat data pengaturan")
 	}
 
 	if namaLembaga != "" {
@@ -139,25 +136,16 @@ func (h *PengaturanHandler) Save(c echo.Context) error {
 	if err == nil && overlayFile != nil && overlayFile.Filename != "" {
 		overlayURL, upErr := saveUploadFile(overlayFile, filepath.Join("static", "uploads", "overlays"), "overlay-galeri")
 		if upErr != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"message": upErr.Error(),
-			})
+			return JSONBadRequest(c, upErr.Error())
 		}
 		setting.OverlayGaleriURL = &overlayURL
 	}
 
 	if err := h.service.Save(setting); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal menyimpan pengaturan",
-		})
+		return JSONInternalError(c, "Gagal menyimpan pengaturan")
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Pengaturan berhasil disimpan",
-	})
+	return JSONOk(c, "Pengaturan berhasil disimpan")
 }
 
 func saveUploadFile(fileHeader *multipart.FileHeader, dir string, filenamePrefix string) (string, error) {

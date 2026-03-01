@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -42,24 +41,13 @@ func NewPublicHandler(jumatBerkahService *services.JumatBerkahService, anakAsuhS
 func (h *PublicHandler) LandingPage(c echo.Context) error {
 	berita, err := h.artikelService.GetPublished(5)
 	if err != nil {
-		log.Printf("Error getting published articles: %v", err)
 		berita = []*models.Artikel{}
 	}
 
-	log.Printf("Found %d articles", len(berita))
-	for i, b := range berita {
+	for _, b := range berita {
 		if b.GambarThumbnail != nil && *b.GambarThumbnail != "" {
-			normalized := normalizeArtikelThumbnailURL(*b.GambarThumbnail)
+			normalized := NormalizeArtikelThumbnailURL(*b.GambarThumbnail)
 			b.GambarThumbnail = &normalized
-		}
-		hasThumb := b.GambarThumbnail != nil && *b.GambarThumbnail != ""
-		log.Printf("Article %d: %s, hasThumbnail: %v", i, b.Judul, hasThumb)
-		if hasThumb {
-			preview := *b.GambarThumbnail
-			if len(preview) > 50 {
-				preview = preview[:50]
-			}
-			log.Printf("  Thumbnail length: %d, starts with: %s", len(*b.GambarThumbnail), preview)
 		}
 	}
 
@@ -179,7 +167,7 @@ func (h *PublicHandler) JumatBerkahForm(c echo.Context) error {
 
 				penerimaList = append(penerimaList, JumatBerkahPenerimaItem{
 					NamaLengkap: reg.Anak.NamaLengkap,
-					Initials:    getInitials(reg.Anak.NamaLengkap),
+					Initials:    GetInitials(reg.Anak.NamaLengkap),
 					Wilayah:     wilayah,
 					Jenjang:     jenjang,
 					StatusAnak:  string(reg.Anak.StatusAnak),
@@ -272,10 +260,7 @@ func (h *PublicHandler) JumatBerkahForm(c echo.Context) error {
 func (h *PublicHandler) SubmitJumatBerkahRegistration(c echo.Context) error {
 	anakIDs := c.FormValue("anak_ids")
 	if anakIDs == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Tidak ada anak asuh yang dipilih",
-		})
+		return JSONBadRequest(c, "Tidak ada anak asuh yang dipilih")
 	}
 
 	ids := strings.Split(anakIDs, ",")
@@ -313,13 +298,10 @@ func (h *PublicHandler) SubmitJumatBerkahRegistration(c echo.Context) error {
 		if lastErr != nil {
 			message = lastErr.Error()
 		}
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": message,
-		})
+		return JSONBadRequest(c, message)
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": strconv.Itoa(count) + " anak asuh berhasil didaftarkan",
 		"count":   count,
@@ -401,7 +383,6 @@ func (h *PublicHandler) DoaHarianPage(c echo.Context) error {
 
 	doaList, err := fetchDoaList(source, query)
 	if err != nil {
-		log.Printf("Error fetching doa data: %v", err)
 		doaList = []DoaItem{}
 	}
 
@@ -462,7 +443,6 @@ func (h *PublicHandler) DzikirPage(c echo.Context) error {
 
 	dzikirList, err := fetchDzikirList(dzikirType, query)
 	if err != nil {
-		log.Printf("Error fetching dzikir data: %v", err)
 		dzikirList = []DzikirItem{}
 	}
 
@@ -496,7 +476,7 @@ func (h *PublicHandler) NewsList(c echo.Context) error {
 	}
 	for _, b := range berita {
 		if b.GambarThumbnail != nil && *b.GambarThumbnail != "" {
-			normalized := normalizeArtikelThumbnailURL(*b.GambarThumbnail)
+			normalized := NormalizeArtikelThumbnailURL(*b.GambarThumbnail)
 			b.GambarThumbnail = &normalized
 		}
 	}
@@ -525,7 +505,7 @@ func (h *PublicHandler) NewsDetail(c echo.Context) error {
 		return c.Render(http.StatusNotFound, "public/news_list.html", data)
 	}
 	if artikel.GambarThumbnail != nil && *artikel.GambarThumbnail != "" {
-		normalized := normalizeArtikelThumbnailURL(*artikel.GambarThumbnail)
+		normalized := NormalizeArtikelThumbnailURL(*artikel.GambarThumbnail)
 		artikel.GambarThumbnail = &normalized
 	}
 
@@ -551,19 +531,15 @@ func (h *PublicHandler) SubmitJumatBerkah(c echo.Context) error {
 	catatan := c.FormValue("catatan")
 
 	if nama == "" || telepon == "" || rt == "" || rw == "" || jumlah == "" || pengiriman == "" || tanggal == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Semua field wajib diisi",
-		})
+		return JSONBadRequest(c, "Semua field wajib diisi")
 	}
 
 	jumlahInt, err := strconv.Atoi(jumlah)
 	if err != nil || jumlahInt <= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Jumlah tidak valid",
-		})
+		return JSONBadRequest(c, "Jumlah tidak valid")
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": "Pendaftaran Jumat Berkah berhasil",
 		"data": map[string]interface{}{
@@ -593,16 +569,12 @@ func (h *PublicHandler) SubmitZakatPayment(c echo.Context) error {
 	newsletter := c.FormValue("newsletter")
 
 	if nama == "" || telepon == "" || zakatType == "" || jumlah == "" || paymentMethod == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Semua field wajib diisi",
-		})
+		return JSONBadRequest(c, "Semua field wajib diisi")
 	}
 
 	jumlahInt, err := strconv.Atoi(jumlah)
 	if err != nil || jumlahInt <= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Jumlah tidak valid",
-		})
+		return JSONBadRequest(c, "Jumlah tidak valid")
 	}
 
 	catatan := "Zakat via halaman pembayaran"
@@ -614,12 +586,10 @@ func (h *PublicHandler) SubmitZakatPayment(c echo.Context) error {
 	}
 
 	if err := h.createPendingDonation(nama, float64(jumlahInt), models.KategoriDanaZakat, catatan); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Gagal mencatat donasi: " + err.Error(),
-		})
+		return JSONBadRequest(c, "Gagal mencatat donasi: "+err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": "Pembayaran zakat berhasil diproses",
 		"data": map[string]interface{}{
@@ -645,19 +615,13 @@ func (h *PublicHandler) SubmitProgramDonasi(c echo.Context) error {
 
 	program := strings.ToLower(strings.TrimSpace(c.FormValue("program")))
 	if program == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Program donasi wajib dipilih",
-		})
+		return JSONBadRequest(c, "Program donasi wajib dipilih")
 	}
 
 	nominalRaw := strings.TrimSpace(c.FormValue("nominal"))
 	nominal, err := parseNominalFromForm(nominalRaw)
 	if err != nil || nominal <= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Nominal tidak valid",
-		})
+		return JSONBadRequest(c, "Nominal tidak valid")
 	}
 
 	kontak := strings.TrimSpace(c.FormValue("kontak"))
@@ -677,16 +641,10 @@ func (h *PublicHandler) SubmitProgramDonasi(c echo.Context) error {
 	}
 
 	if err := h.createPendingDonation(nama, nominal, kategori, catatan); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Gagal mencatat donasi: " + err.Error(),
-		})
+		return JSONBadRequest(c, "Gagal mencatat donasi: "+err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Donasi berhasil dicatat dan menunggu verifikasi admin",
-	})
+	return JSONOk(c, "Donasi berhasil dicatat dan menunggu verifikasi admin")
 }
 
 func (h *PublicHandler) SubmitProgramDonasiConfirmation(c echo.Context) error {
@@ -696,39 +654,24 @@ func (h *PublicHandler) SubmitProgramDonasiConfirmation(c echo.Context) error {
 	}
 	nominal, err := parseNominalFromForm(strings.TrimSpace(c.FormValue("nominal")))
 	if err != nil || nominal <= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Nominal tidak valid",
-		})
+		return JSONBadRequest(c, "Nominal tidak valid")
 	}
 	program := strings.ToLower(strings.TrimSpace(c.FormValue("program")))
 	if program == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Program donasi wajib dipilih",
-		})
+		return JSONBadRequest(c, "Program donasi wajib dipilih")
 	}
 	nomorHP := strings.TrimSpace(c.FormValue("nomor_hp"))
 	if nomorHP == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Nomor HP wajib diisi",
-		})
+		return JSONBadRequest(c, "Nomor HP wajib diisi")
 	}
 
 	buktiFile, err := c.FormFile("bukti_transfer")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Bukti transfer wajib diupload",
-		})
+		return JSONBadRequest(c, "Bukti transfer wajib diupload")
 	}
 	buktiURL, err := saveDonasiProofFile(buktiFile)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		return JSONBadRequest(c, err.Error())
 	}
 
 	metode := strings.TrimSpace(c.FormValue("metode"))
@@ -748,13 +691,10 @@ func (h *PublicHandler) SubmitProgramDonasiConfirmation(c echo.Context) error {
 		StatusVerifikasi: models.StatusVerifikasiPending,
 	}
 	if err := h.keuanganService.CreatePemasukan(pemasukan); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Gagal mencatat donasi: " + err.Error(),
-		})
+		return JSONBadRequest(c, "Gagal mencatat donasi: "+err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": "Bukti transfer berhasil dikirim. Status: menunggu verifikasi.",
 		"id":      pemasukan.ID,
@@ -766,17 +706,11 @@ func (h *PublicHandler) SubmitProgramDonasiConfirmation(c echo.Context) error {
 func (h *PublicHandler) GetProgramDonasiStatus(c echo.Context) error {
 	id := strings.TrimSpace(c.Param("id"))
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "ID donasi tidak valid",
-		})
+		return JSONBadRequest(c, "ID donasi tidak valid")
 	}
 	p, err := h.keuanganService.GetPemasukanByID(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{
-			"success": false,
-			"message": "Data donasi tidak ditemukan",
-		})
+		return JSONNotFound(c, "Data donasi tidak ditemukan")
 	}
 
 	label := "Menunggu Verifikasi"
@@ -784,7 +718,7 @@ func (h *PublicHandler) GetProgramDonasiStatus(c echo.Context) error {
 		label = "Terverifikasi"
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"data": map[string]interface{}{
 			"id":         p.ID,
@@ -797,18 +731,12 @@ func (h *PublicHandler) GetProgramDonasiStatus(c echo.Context) error {
 func (h *PublicHandler) GetProgramDonasiHistory(c echo.Context) error {
 	nomorHP := strings.TrimSpace(c.QueryParam("nomor_hp"))
 	if nomorHP == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Nomor HP wajib diisi",
-		})
+		return JSONBadRequest(c, "Nomor HP wajib diisi")
 	}
 
 	list, err := h.keuanganService.GetPemasukanByNomorHP(nomorHP)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Gagal mengambil riwayat donasi",
-		})
+		return JSONInternalError(c, "Gagal mengambil riwayat donasi")
 	}
 
 	result := make([]map[string]interface{}, 0)
@@ -827,7 +755,7 @@ func (h *PublicHandler) GetProgramDonasiHistory(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"data":    result,
 	})
@@ -837,12 +765,10 @@ func (h *PublicHandler) SubscribeNewsletter(c echo.Context) error {
 	email := c.FormValue("email")
 
 	if email == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Email wajib diisi",
-		})
+		return JSONBadRequest(c, "Email wajib diisi")
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": "Berhasil berlangganan newsletter",
 		"email":   email,
@@ -882,7 +808,7 @@ func (h *PublicHandler) GetJumatBerkahData(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"data":    result,
 	})

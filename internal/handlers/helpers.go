@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -267,9 +268,41 @@ func FotoProfilFilePath(url string) string {
 	return filepath.Join("static", filepath.FromSlash(relativePath))
 }
 
-// NormalizeArtikelThumbnailURL menormalisasi URL thumbnail artikel.
+// NormalizeArtikelThumbnailURL menormalisasi URL thumbnail artikel,
+// termasuk menangani data URI base64 maupun URL relatif/absolut.
 func NormalizeArtikelThumbnailURL(raw string) string {
-	return NormalizeFotoProfilURL(raw)
+	thumb := strings.TrimSpace(raw)
+	if thumb == "" {
+		return ""
+	}
+	if strings.HasPrefix(thumb, "data:image/") {
+		return thumb
+	}
+	if strings.HasPrefix(thumb, "http://") || strings.HasPrefix(thumb, "https://") {
+		return thumb
+	}
+	if strings.HasPrefix(thumb, "/static/") {
+		return thumb
+	}
+	if strings.HasPrefix(thumb, "/uploads/") {
+		return "/static" + thumb
+	}
+	if strings.HasPrefix(thumb, "uploads/") {
+		return "/static/" + thumb
+	}
+	if strings.HasPrefix(thumb, "static/") {
+		return "/" + thumb
+	}
+	if strings.Contains(thumb, ";base64,") && !strings.HasPrefix(thumb, "data:") {
+		return "data:image/jpeg;base64," + strings.TrimPrefix(thumb, ";base64,")
+	}
+	compact := strings.ReplaceAll(strings.ReplaceAll(thumb, "\n", ""), "\r", "")
+	if len(compact) > 100 && !strings.Contains(compact, " ") {
+		if _, err := base64.StdEncoding.DecodeString(compact); err == nil {
+			return "data:image/jpeg;base64," + compact
+		}
+	}
+	return thumb
 }
 
 // ─── Flash Message Helpers ─────────────────────────────────────────────────────

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"regexp"
@@ -84,11 +83,8 @@ func (h *ArtikelHandler) List(c echo.Context) error {
 		thumbnail := ""
 		hasThumbnail := false
 		if a.GambarThumbnail != nil && *a.GambarThumbnail != "" {
-			thumbnail = normalizeArtikelThumbnailURL(*a.GambarThumbnail)
+			thumbnail = NormalizeArtikelThumbnailURL(*a.GambarThumbnail)
 			hasThumbnail = thumbnail != ""
-			log.Printf("Artikel %s has thumbnail, length: %d", a.ID, len(thumbnail))
-		} else {
-			log.Printf("Artikel %s has NO thumbnail", a.ID)
 		}
 
 		kategori := "Umum"
@@ -135,7 +131,7 @@ func (h *ArtikelHandler) List(c echo.Context) error {
 
 	data := ArtikelListData{
 		PageTitle:   "Artikel & Kegiatan - Admin Panel",
-		User:        &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
+		User:        GetUserFromContext(c),
 		TotalKonten: totalKonten,
 		TelahTerbit: telahTerbit,
 		Draft:       draft,
@@ -159,7 +155,7 @@ type ArtikelFormData struct {
 func (h *ArtikelHandler) Form(c echo.Context) error {
 	data := ArtikelFormData{
 		PageTitle: "Tulis Artikel - Admin Panel",
-		User:      &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
+		User:      GetUserFromContext(c),
 		IsEdit:    false,
 	}
 
@@ -174,13 +170,13 @@ func (h *ArtikelHandler) EditForm(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/admin/artikel?error=Artikel tidak ditemukan")
 	}
 	if artikel.GambarThumbnail != nil && *artikel.GambarThumbnail != "" {
-		normalized := normalizeArtikelThumbnailURL(*artikel.GambarThumbnail)
+		normalized := NormalizeArtikelThumbnailURL(*artikel.GambarThumbnail)
 		artikel.GambarThumbnail = &normalized
 	}
 
 	data := ArtikelFormData{
 		PageTitle: "Edit Artikel - Admin Panel",
-		User:      &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
+		User:      GetUserFromContext(c),
 		Artikel:   artikel,
 		IsEdit:    true,
 	}
@@ -247,7 +243,6 @@ func (h *ArtikelHandler) Create(c echo.Context) error {
 	}
 
 	if err := h.service.Create(artikel); err != nil {
-		log.Printf("Error creating artikel: %v", err)
 		return c.Redirect(http.StatusFound, "/admin/artikel?error=Gagal menyimpan artikel: "+err.Error())
 	}
 
@@ -265,10 +260,7 @@ func (h *ArtikelHandler) Update(c echo.Context) error {
 	metaDeskripsi := c.FormValue("meta_deskripsi")
 
 	if judul == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Judul artikel wajib diisi",
-		})
+		return JSONBadRequest(c, "Judul artikel wajib diisi")
 	}
 
 	artikel, err := h.service.GetByID(id)
@@ -324,16 +316,10 @@ func (h *ArtikelHandler) Delete(c echo.Context) error {
 	id := c.Param("id")
 
 	if err := h.service.Delete(id); err != nil {
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": false,
-			"message": "Gagal menghapus artikel",
-		})
+		return JSONBadRequest(c, "Gagal menghapus artikel")
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Artikel berhasil dihapus",
-	})
+	return JSONOk(c, "Artikel berhasil dihapus")
 }
 
 func (h *ArtikelHandler) Publish(c echo.Context) error {
@@ -341,10 +327,7 @@ func (h *ArtikelHandler) Publish(c echo.Context) error {
 
 	artikel, err := h.service.GetByID(id)
 	if err != nil {
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": false,
-			"message": "Artikel tidak ditemukan",
-		})
+		return JSONNotFound(c, "Artikel tidak ditemukan")
 	}
 
 	artikel.StatusPublikasi = models.StatusPublikasiTerbit
@@ -352,16 +335,10 @@ func (h *ArtikelHandler) Publish(c echo.Context) error {
 	artikel.TanggalTerbit = &now
 
 	if err := h.service.Update(artikel); err != nil {
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": false,
-			"message": "Gagal mempublikasikan artikel",
-		})
+		return JSONInternalError(c, "Gagal mempublikasikan artikel")
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Artikel berhasil dipublikasikan",
-	})
+	return JSONOk(c, "Artikel berhasil dipublikasikan")
 }
 
 func generateSlug(title string) string {
@@ -443,45 +420,6 @@ func buildThumbnailDataURI(file *multipart.FileHeader) (*string, error) {
 
 	base64Str := "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(buf)
 	return &base64Str, nil
-}
-
-func normalizeArtikelThumbnailURL(raw string) string {
-	thumb := strings.TrimSpace(raw)
-	if thumb == "" {
-		return ""
-	}
-
-	if strings.HasPrefix(thumb, "data:image/") {
-		return thumb
-	}
-	if strings.HasPrefix(thumb, "http://") || strings.HasPrefix(thumb, "https://") {
-		return thumb
-	}
-	if strings.HasPrefix(thumb, "/static/") {
-		return thumb
-	}
-	if strings.HasPrefix(thumb, "/uploads/") {
-		return "/static" + thumb
-	}
-	if strings.HasPrefix(thumb, "uploads/") {
-		return "/static/" + thumb
-	}
-	if strings.HasPrefix(thumb, "static/") {
-		return "/" + thumb
-	}
-
-	if strings.Contains(thumb, ";base64,") && !strings.HasPrefix(thumb, "data:") {
-		return "data:image/jpeg;base64," + strings.TrimPrefix(thumb, ";base64,")
-	}
-
-	compact := strings.ReplaceAll(strings.ReplaceAll(thumb, "\n", ""), "\r", "")
-	if len(compact) > 100 && !strings.Contains(compact, " ") {
-		if _, err := base64.StdEncoding.DecodeString(compact); err == nil {
-			return "data:image/jpeg;base64," + compact
-		}
-	}
-
-	return thumb
 }
 
 func normalizeArtikelKonten(raw string) string {

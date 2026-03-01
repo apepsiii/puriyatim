@@ -80,7 +80,7 @@ func (h *GaleriHandler) AdminPage(c echo.Context) error {
 
 	data := GaleriAdminData{
 		PageTitle:  "Galeri Foto - Admin Panel",
-		User:       &UserInfo{NamaLengkap: "Admin", Peran: "Administrator"},
+		User:       GetUserFromContext(c),
 		OverlayURL: overlayURL,
 		HasOverlay: hasOverlay,
 		FotoList:   items,
@@ -91,27 +91,18 @@ func (h *GaleriHandler) AdminPage(c echo.Context) error {
 func (h *GaleriHandler) Update(c echo.Context) error {
 	id := c.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "ID galeri tidak valid",
-		})
+		return JSONBadRequest(c, "ID galeri tidak valid")
 	}
 
 	existing, err := h.galeriService.GetByID(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		return JSONNotFound(c, err.Error())
 	}
 
 	judul := strings.TrimSpace(c.FormValue("judul"))
 	deskripsi := strings.TrimSpace(c.FormValue("deskripsi"))
 	if judul == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Judul foto wajib diisi",
-		})
+		return JSONBadRequest(c, "Judul foto wajib diisi")
 	}
 
 	existing.Judul = judul
@@ -121,26 +112,17 @@ func (h *GaleriHandler) Update(c echo.Context) error {
 	if fileErr == nil && file != nil && file.Filename != "" {
 		setting, err := h.pengaturanService.Get()
 		if err != nil || setting == nil || setting.OverlayGaleriURL == nil || strings.TrimSpace(*setting.OverlayGaleriURL) == "" {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"message": "Overlay galeri belum diatur. Upload dahulu di Pengaturan Web.",
-			})
+			return JSONBadRequest(c, "Overlay galeri belum diatur. Upload dahulu di Pengaturan Web.")
 		}
 
 		originalURL, originalPath, err := saveGaleriOriginal(file)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"message": err.Error(),
-			})
+			return JSONBadRequest(c, err.Error())
 		}
 		overlayPath := strings.TrimPrefix(normalizeStaticURL(*setting.OverlayGaleriURL), "/")
 		processedURL, err := applyOverlayAndSave(originalPath, overlayPath)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"message": "Gagal memproses overlay: " + err.Error(),
-			})
+			return JSONBadRequest(c, "Gagal memproses overlay: "+err.Error())
 		}
 
 		oldOriginal := existing.GambarAsliURL
@@ -149,97 +131,61 @@ func (h *GaleriHandler) Update(c echo.Context) error {
 		existing.GambarOverlayURL = processedURL
 
 		if err := h.galeriService.Update(existing); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"message": err.Error(),
-			})
+			return JSONBadRequest(c, err.Error())
 		}
 
 		deleteFileIfExists(oldOriginal)
 		deleteFileIfExists(oldOverlay)
 
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": true,
-			"message": "Foto galeri berhasil diperbarui",
-		})
+		return JSONOk(c, "Foto galeri berhasil diperbarui")
 	}
 
 	if err := h.galeriService.Update(existing); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		return JSONBadRequest(c, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Data galeri berhasil diperbarui",
-	})
+	return JSONOk(c, "Data galeri berhasil diperbarui")
 }
 
 func (h *GaleriHandler) Delete(c echo.Context) error {
 	id := c.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "ID galeri tidak valid",
-		})
+		return JSONBadRequest(c, "ID galeri tidak valid")
 	}
 
 	existing, err := h.galeriService.GetByID(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		return JSONNotFound(c, err.Error())
 	}
 
 	if err := h.galeriService.Delete(id); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		return JSONBadRequest(c, err.Error())
 	}
 
 	deleteFileIfExists(existing.GambarAsliURL)
 	deleteFileIfExists(existing.GambarOverlayURL)
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Foto galeri berhasil dihapus",
-	})
+	return JSONOk(c, "Foto galeri berhasil dihapus")
 }
 
 func (h *GaleriHandler) Upload(c echo.Context) error {
 	setting, err := h.pengaturanService.Get()
 	if err != nil || setting == nil || setting.OverlayGaleriURL == nil || strings.TrimSpace(*setting.OverlayGaleriURL) == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Overlay galeri belum diatur. Upload dahulu di Pengaturan Web.",
-		})
+		return JSONBadRequest(c, "Overlay galeri belum diatur. Upload dahulu di Pengaturan Web.")
 	}
 
 	judulPrefix := strings.TrimSpace(c.FormValue("judul"))
 	deskripsi := strings.TrimSpace(c.FormValue("deskripsi"))
 	form, err := c.MultipartForm()
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Format upload tidak valid",
-		})
+		return JSONBadRequest(c, "Format upload tidak valid")
 	}
 	files := form.File["foto"]
 	if len(files) == 0 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Minimal upload 1 file foto",
-		})
+		return JSONBadRequest(c, "Minimal upload 1 file foto")
 	}
 	if len(files) > 20 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Maksimal 20 foto per upload",
-		})
+		return JSONBadRequest(c, "Maksimal 20 foto per upload")
 	}
 
 	overlayPath := strings.TrimPrefix(normalizeStaticURL(*setting.OverlayGaleriURL), "/")
@@ -280,10 +226,7 @@ func (h *GaleriHandler) Upload(c echo.Context) error {
 	}
 
 	if createdCount == 0 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Semua file gagal diproses. Cek format gambar dan overlay.",
-		})
+		return JSONBadRequest(c, "Semua file gagal diproses. Cek format gambar dan overlay.")
 	}
 
 	message := fmt.Sprintf("%d foto berhasil diupload dan diproses overlay", createdCount)
@@ -291,7 +234,7 @@ func (h *GaleriHandler) Upload(c echo.Context) error {
 		message += fmt.Sprintf(", %d file gagal", len(failedFiles))
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return JSONWithFields(c, map[string]interface{}{
 		"success": true,
 		"message": message,
 		"failed":  failedFiles,
