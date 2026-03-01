@@ -29,7 +29,7 @@ func (r *RekeningDonasiRepository) GetAll() ([]*models.RekeningDonasi, error) {
 	for rows.Next() {
 		var item models.RekeningDonasi
 		var aktifInt int
-		if err := rows.Scan(&item.ID, &item.NamaBank, &item.LogoBank, &item.NomorRekening, &item.AtasNama, &item.Urutan, &aktifInt); err != nil {
+		if err := rows.Scan(&item.ID, &item.NamaBank, &item.LogoURL, &item.NomorRekening, &item.AtasNama, &item.Urutan, &aktifInt); err != nil {
 			return nil, err
 		}
 		item.Aktif = aktifInt == 1
@@ -38,11 +38,25 @@ func (r *RekeningDonasiRepository) GetAll() ([]*models.RekeningDonasi, error) {
 	return list, rows.Err()
 }
 
+func (r *RekeningDonasiRepository) GetByID(id int) (*models.RekeningDonasi, error) {
+	var item models.RekeningDonasi
+	var aktifInt int
+	err := r.db.QueryRow(`
+		SELECT id, nama_bank, logo_bank, nomor_rekening, atas_nama, urutan, aktif
+		FROM REKENING_DONASI WHERE id = ?
+	`, id).Scan(&item.ID, &item.NamaBank, &item.LogoURL, &item.NomorRekening, &item.AtasNama, &item.Urutan, &aktifInt)
+	if err != nil {
+		return nil, err
+	}
+	item.Aktif = aktifInt == 1
+	return &item, nil
+}
+
 func (r *RekeningDonasiRepository) Create(item *models.RekeningDonasi) error {
 	_, err := r.db.Exec(`
 		INSERT INTO REKENING_DONASI (nama_bank, logo_bank, nomor_rekening, atas_nama, urutan, aktif, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, item.NamaBank, item.LogoBank, item.NomorRekening, item.AtasNama, item.Urutan, boolToInt(item.Aktif),
+	`, item.NamaBank, item.LogoURL, item.NomorRekening, item.AtasNama, item.Urutan, boolToInt(item.Aktif),
 		time.Now(), time.Now())
 	return err
 }
@@ -52,7 +66,7 @@ func (r *RekeningDonasiRepository) Update(item *models.RekeningDonasi) error {
 		UPDATE REKENING_DONASI
 		SET nama_bank=?, logo_bank=?, nomor_rekening=?, atas_nama=?, urutan=?, aktif=?, updated_at=?
 		WHERE id=?
-	`, item.NamaBank, item.LogoBank, item.NomorRekening, item.AtasNama, item.Urutan, boolToInt(item.Aktif),
+	`, item.NamaBank, item.LogoURL, item.NomorRekening, item.AtasNama, item.Urutan, boolToInt(item.Aktif),
 		time.Now(), item.ID)
 	return err
 }

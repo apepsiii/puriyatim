@@ -22,12 +22,19 @@ func (s *RekeningDonasiService) GetAll() ([]*models.RekeningDonasi, error) {
 	return s.repo.GetAll()
 }
 
+func (s *RekeningDonasiService) GetByID(id int) (*models.RekeningDonasi, error) {
+	if s.repo == nil {
+		return nil, errors.New("layanan rekening tidak tersedia")
+	}
+	return s.repo.GetByID(id)
+}
+
 func (s *RekeningDonasiService) Create(item *models.RekeningDonasi) error {
 	if s.repo == nil {
 		return errors.New("layanan rekening tidak tersedia")
 	}
 	item.NamaBank = strings.TrimSpace(item.NamaBank)
-	item.LogoBank = strings.TrimSpace(item.LogoBank)
+	item.LogoURL = strings.TrimSpace(item.LogoURL)
 	item.NomorRekening = strings.TrimSpace(item.NomorRekening)
 	item.AtasNama = strings.TrimSpace(item.AtasNama)
 

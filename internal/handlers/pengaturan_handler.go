@@ -191,42 +191,69 @@ func (h *PengaturanHandler) ListRekening(c echo.Context) error {
 	})
 }
 
-// CreateRekening menambah rekening baru.
+// CreateRekening menambah rekening baru beserta upload logo bank.
+// Menerima multipart/form-data: nama_bank, nomor_rekening, atas_nama, logo_bank (file).
 func (h *PengaturanHandler) CreateRekening(c echo.Context) error {
-	var req struct {
-		NamaBank      string `json:"nama_bank"`
-		LogoBank      string `json:"logo_bank"`
-		NomorRekening string `json:"nomor_rekening"`
-		AtasNama      string `json:"atas_nama"`
-		Urutan        int    `json:"urutan"`
+	namaBank := strings.TrimSpace(c.FormValue("nama_bank"))
+	nomorRekening := strings.TrimSpace(c.FormValue("nomor_rekening"))
+	atasNama := strings.TrimSpace(c.FormValue("atas_nama"))
+
+	if namaBank == "" || nomorRekening == "" || atasNama == "" {
+		return JSONBadRequest(c, "Nama bank, nomor rekening, dan atas nama wajib diisi")
 	}
-	if err := c.Bind(&req); err != nil {
-		return JSONBadRequest(c, "Format data tidak valid")
+
+	// Upload logo (opsional)
+	logoURL := ""
+	logoFile, err := c.FormFile("logo_bank")
+	if err == nil && logoFile != nil && logoFile.Filename != "" {
+		dir := filepath.Join("static", "uploads", "banks")
+		// Gunakan nama unik agar tidak bentrok antar bank
+		safeName := strings.ToLower(strings.ReplaceAll(namaBank, " ", "-"))
+		url, upErr := saveUploadFile(logoFile, dir, "bank-"+safeName)
+		if upErr != nil {
+			return JSONBadRequest(c, upErr.Error())
+		}
+		logoURL = url
 	}
 
 	item := &models.RekeningDonasi{
-		NamaBank:      req.NamaBank,
-		LogoBank:      req.LogoBank,
-		NomorRekening: req.NomorRekening,
-		AtasNama:      req.AtasNama,
-		Urutan:        req.Urutan,
+		NamaBank:      namaBank,
+		LogoURL:       logoURL,
+		NomorRekening: nomorRekening,
+		AtasNama:      atasNama,
+		Urutan:        99,
 		Aktif:         true,
 	}
 	if err := h.rekeningService.Create(item); err != nil {
+		// Bersihkan file logo jika DB gagal
+		if logoURL != "" {
+			os.Remove(strings.TrimPrefix(logoURL, "/"))
+		}
 		return JSONBadRequest(c, err.Error())
 	}
 	return JSONOk(c, "Rekening berhasil ditambahkan")
 }
 
-// DeleteRekening menghapus rekening berdasarkan ID.
+// DeleteRekening menghapus rekening beserta file logo dari disk.
 func (h *PengaturanHandler) DeleteRekening(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		return JSONBadRequest(c, "ID rekening tidak valid")
 	}
+
+	// Ambil dulu data rekening untuk mendapatkan path logo
+	existing, _ := h.rekeningService.GetByID(id)
+
 	if err := h.rekeningService.Delete(id); err != nil {
 		return JSONInternalError(c, "Gagal menghapus rekening")
 	}
+
+	// Hapus file logo dari disk jika ada
+	if existing != nil && existing.LogoURL != "" {
+		localPath := strings.TrimPrefix(existing.LogoURL, "/")
+		os.Remove(localPath) // abaikan error jika file sudah tidak ada
+	}
+
 	return JSONOk(c, "Rekening berhasil dihapus")
 }

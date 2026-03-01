@@ -261,10 +261,11 @@
                         <div class="rekening-item flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3" data-id="{{.ID}}">
                             <!-- Logo bank -->
                             <div class="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
-                                <img src="/static/images/banks/{{.LogoBank}}.png"
-                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-                                     alt="{{.NamaBank}}" class="w-10 h-10 object-contain">
-                                <span style="display:none" class="text-xs font-bold text-gray-500 w-full h-full flex items-center justify-center">{{slice .NamaBank 0 3}}</span>
+                                {{if .LogoURL}}
+                                <img src="{{.LogoURL}}" alt="{{.NamaBank}}" class="w-10 h-10 object-contain">
+                                {{else}}
+                                <i class="fas fa-university text-gray-300 text-xl"></i>
+                                {{end}}
                             </div>
                             <!-- Info rekening -->
                             <div class="flex-1 min-w-0">
@@ -289,22 +290,31 @@
                     <div id="addRekeningForm" class="hidden border border-dashed border-emerald-300 bg-emerald-50/50 rounded-xl p-4 space-y-3">
                         <p class="text-sm font-semibold text-gray-700 mb-2"><i class="fas fa-plus-circle text-primary mr-1"></i>Tambah Rekening Baru</p>
 
-                        <!-- Nama Bank (Dropdown + search) -->
-                        <div class="relative" x-data="bankDropdown()">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Nama Bank <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="text" id="bankSearch" placeholder="Cari atau ketik nama bank..."
-                                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full pl-10 p-2.5 outline-none"
-                                       oninput="filterBanks(this.value)" onfocus="openBankDropdown()" autocomplete="off">
-                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                    <i class="fas fa-university text-gray-400"></i>
+                        <!-- Upload Logo Bank -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-2">Logo Bank <span class="text-gray-400">(opsional, PNG/JPG)</span></label>
+                            <div class="flex items-center gap-3">
+                                <!-- Preview -->
+                                <div id="logoPreview" class="w-14 h-14 rounded-xl bg-white border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                    <i class="fas fa-image text-gray-300 text-xl" id="logoPlaceholderIcon"></i>
+                                    <img id="logoPreviewImg" src="" alt="" class="w-12 h-12 object-contain hidden">
                                 </div>
-                                <input type="hidden" id="selectedBankSlug">
+                                <div class="flex-1">
+                                    <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                           class="block w-full text-sm text-gray-500
+                                                  file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
+                                                  file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700
+                                                  hover:file:bg-emerald-100 cursor-pointer transition-colors"
+                                           onchange="previewLogo(this)">
+                                    <p class="text-xs text-gray-400 mt-1">Maks 1MB. Gunakan PNG transparan untuk hasil terbaik.</p>
+                                </div>
                             </div>
-                            <!-- Dropdown list -->
-                            <div id="bankDropdown"
-                                 class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto hidden">
-                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Nama Bank <span class="text-red-500">*</span></label>
+                            <input type="text" id="newNamaBank" placeholder="Contoh: BSI, BRI, BCA, Mandiri..."
+                                   class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none">
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -360,102 +370,68 @@
             overlay.classList.toggle('hidden');
         }
 
-        /* ===== DAFTAR BANK ===== */
-        const BANK_LIST = [
-            { name: 'BSI (Bank Syariah Indonesia)', slug: 'bsi' },
-            { name: 'BRI (Bank Rakyat Indonesia)', slug: 'bri' },
-            { name: 'BNI (Bank Negara Indonesia)', slug: 'bni' },
-            { name: 'Bank Mandiri', slug: 'mandiri' },
-            { name: 'BCA (Bank Central Asia)', slug: 'bca' },
-            { name: 'Bank BTN', slug: 'btn' },
-            { name: 'Bank CIMB Niaga', slug: 'cimb' },
-            { name: 'Bank Danamon', slug: 'danamon' },
-            { name: 'Bank Permata', slug: 'permata' },
-            { name: 'Bank Muamalat', slug: 'muamalat' },
-            { name: 'Bank Mega', slug: 'mega' },
-            { name: 'Bank BPD / Bank Daerah', slug: 'bpd' },
-            { name: 'Lainnya', slug: 'other' },
-        ];
-
-        let filteredBanks = [...BANK_LIST];
-        let selectedBank = null;
-
-        function filterBanks(query) {
-            const q = query.toLowerCase();
-            filteredBanks = BANK_LIST.filter(b => b.name.toLowerCase().includes(q));
-            renderBankDropdown();
-            openBankDropdown();
-        }
-
-        function renderBankDropdown() {
-            const dd = document.getElementById('bankDropdown');
-            if (filteredBanks.length === 0) {
-                dd.innerHTML = '<p class="text-sm text-gray-400 px-4 py-3">Bank tidak ditemukan</p>';
-                return;
+        /* ===== PREVIEW LOGO ===== */
+        function previewLogo(input) {
+            const icon = document.getElementById('logoPlaceholderIcon');
+            const img  = document.getElementById('logoPreviewImg');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    icon.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                img.classList.add('hidden');
+                icon.classList.remove('hidden');
             }
-            dd.innerHTML = filteredBanks.map(b => `
-                <button type="button" onclick="selectBank('${b.slug}','${b.name}')"
-                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-primary flex items-center gap-3 transition-colors">
-                    <div class="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <img src="/static/images/banks/${b.slug}.png" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
-                             class="w-7 h-7 object-contain" alt="">
-                        <span style="display:none" class="text-xs font-bold text-gray-500">${b.slug.substring(0,3).toUpperCase()}</span>
-                    </div>
-                    ${b.name}
-                </button>
-            `).join('');
         }
-
-        function openBankDropdown() {
-            filteredBanks = BANK_LIST.filter(b => b.name.toLowerCase().includes(document.getElementById('bankSearch').value.toLowerCase()));
-            renderBankDropdown();
-            document.getElementById('bankDropdown').classList.remove('hidden');
-        }
-
-        function closeBankDropdown() {
-            setTimeout(() => document.getElementById('bankDropdown').classList.add('hidden'), 200);
-        }
-
-        function selectBank(slug, name) {
-            selectedBank = { slug, name };
-            document.getElementById('bankSearch').value = name;
-            document.getElementById('selectedBankSlug').value = slug;
-            document.getElementById('bankDropdown').classList.add('hidden');
-        }
-
-        document.getElementById('bankSearch')?.addEventListener('blur', closeBankDropdown);
 
         /* ===== TOGGLE FORM TAMBAH ===== */
         function toggleAddForm(show) {
             document.getElementById('addRekeningForm').classList.toggle('hidden', !show);
             document.getElementById('btnTambahRekening').classList.toggle('hidden', show);
-            if (show) document.getElementById('bankSearch').focus();
+            if (show) {
+                document.getElementById('newNamaBank').focus();
+                // Reset form fields
+                document.getElementById('newNamaBank').value = '';
+                document.getElementById('newNomorRekening').value = '';
+                document.getElementById('newAtasNama').value = '';
+                document.getElementById('logoFileInput').value = '';
+                const img  = document.getElementById('logoPreviewImg');
+                const icon = document.getElementById('logoPlaceholderIcon');
+                img.classList.add('hidden');
+                icon.classList.remove('hidden');
+            }
         }
 
-        /* ===== SUBMIT REKENING BARU ===== */
+        /* ===== SUBMIT REKENING BARU (multipart) ===== */
         async function submitNewRekening() {
-            const namaBank = document.getElementById('bankSearch').value.trim();
-            const logoBank = document.getElementById('selectedBankSlug').value.trim() || 'other';
-            const nomor = document.getElementById('newNomorRekening').value.trim();
+            const namaBank = document.getElementById('newNamaBank').value.trim();
+            const nomor    = document.getElementById('newNomorRekening').value.trim();
             const atasNama = document.getElementById('newAtasNama').value.trim();
 
             if (!namaBank || !nomor || !atasNama) {
-                Swal.fire({ icon:'warning', title:'Data Tidak Lengkap', text:'Isi semua kolom rekening.', confirmButtonColor:'#10b981' });
+                Swal.fire({ icon:'warning', title:'Data Tidak Lengkap', text:'Nama bank, nomor rekening, dan atas nama wajib diisi.', confirmButtonColor:'#10b981' });
                 return;
             }
 
+            const fd = new FormData();
+            fd.append('nama_bank', namaBank);
+            fd.append('nomor_rekening', nomor);
+            fd.append('atas_nama', atasNama);
+            const logoFile = document.getElementById('logoFileInput').files[0];
+            if (logoFile) fd.append('logo_bank', logoFile);
+
             try {
-                const res = await fetch('/admin/pengaturan/rekening', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nama_bank: namaBank, logo_bank: logoBank, nomor_rekening: nomor, atas_nama: atasNama, urutan: 99 })
-                });
+                const res = await fetch('/admin/pengaturan/rekening', { method: 'POST', body: fd });
                 const result = await res.json();
                 if (result.success) {
                     await Swal.fire({ icon:'success', title:'Berhasil', text:'Rekening ditambahkan.', confirmButtonColor:'#10b981', timer:1500, showConfirmButton:false });
                     location.reload();
                 } else {
-                    Swal.fire({ icon:'error', title:'Gagal', text: result.message, confirmButtonColor:'#ef4444' });
+                    Swal.fire({ icon:'error', title:'Gagal', text: result.message || 'Terjadi kesalahan.', confirmButtonColor:'#ef4444' });
                 }
             } catch(e) {
                 Swal.fire({ icon:'error', title:'Error', text:'Gagal terhubung ke server.', confirmButtonColor:'#ef4444' });
