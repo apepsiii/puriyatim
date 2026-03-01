@@ -2,8 +2,13 @@ package handlers
 
 import (
 	"encoding/base64"
+	"fmt"
+	"html"
+	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -79,8 +84,8 @@ func (h *ArtikelHandler) List(c echo.Context) error {
 		thumbnail := ""
 		hasThumbnail := false
 		if a.GambarThumbnail != nil && *a.GambarThumbnail != "" {
-			thumbnail = *a.GambarThumbnail
-			hasThumbnail = true
+			thumbnail = normalizeArtikelThumbnailURL(*a.GambarThumbnail)
+			hasThumbnail = thumbnail != ""
 			log.Printf("Artikel %s has thumbnail, length: %d", a.ID, len(thumbnail))
 		} else {
 			log.Printf("Artikel %s has NO thumbnail", a.ID)
@@ -168,6 +173,10 @@ func (h *ArtikelHandler) EditForm(c echo.Context) error {
 	if err != nil {
 		return c.Redirect(http.StatusFound, "/admin/artikel?error=Artikel tidak ditemukan")
 	}
+	if artikel.GambarThumbnail != nil && *artikel.GambarThumbnail != "" {
+		normalized := normalizeArtikelThumbnailURL(*artikel.GambarThumbnail)
+		artikel.GambarThumbnail = &normalized
+	}
 
 	data := ArtikelFormData{
 		PageTitle: "Edit Artikel - Admin Panel",
@@ -194,6 +203,7 @@ func (h *ArtikelHandler) Create(c echo.Context) error {
 	if konten == "" {
 		konten = "<p>Artikel sedang dalam proses penulisan.</p>"
 	}
+	konten = normalizeArtikelKonten(konten)
 
 	if slug == "" {
 		slug = generateSlug(judul)
@@ -214,15 +224,9 @@ func (h *ArtikelHandler) Create(c echo.Context) error {
 	var thumbnailBase64 *string
 	file, err := c.FormFile("gambar_thumbnail")
 	if err == nil {
-		src, err := file.Open()
-		if err == nil {
-			defer src.Close()
-			buf := make([]byte, file.Size)
-			src.Read(buf)
-
-			mimeType := file.Header.Get("Content-Type")
-			base64Str := "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(buf)
-			thumbnailBase64 = &base64Str
+		thumbnailBase64, err = buildThumbnailDataURI(file)
+		if err != nil {
+			return c.Redirect(http.StatusFound, "/admin/artikel?error="+err.Error())
 		}
 	}
 
@@ -290,21 +294,16 @@ func (h *ArtikelHandler) Update(c echo.Context) error {
 
 	file, err := c.FormFile("gambar_thumbnail")
 	if err == nil {
-		src, err := file.Open()
-		if err == nil {
-			defer src.Close()
-			buf := make([]byte, file.Size)
-			src.Read(buf)
-
-			mimeType := file.Header.Get("Content-Type")
-			base64Str := "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(buf)
-			artikel.GambarThumbnail = &base64Str
+		thumbnailBase64, err := buildThumbnailDataURI(file)
+		if err != nil {
+			return c.Redirect(http.StatusFound, "/admin/artikel?error="+err.Error())
 		}
+		artikel.GambarThumbnail = thumbnailBase64
 	}
 
 	artikel.Judul = judul
 	artikel.Slug = slug
-	artikel.KontenHTML = konten
+	artikel.KontenHTML = normalizeArtikelKonten(konten)
 	artikel.IDKategori = katID
 	artikel.StatusPublikasi = statusPublikasi
 	artikel.MetaDeskripsi = metaDeskripsi
@@ -406,4 +405,125 @@ func generateSlug(title string) string {
 		slug = slug[:len(slug)-1]
 	}
 	return string(slug)
+}
+
+func buildThumbnailDataURI(file *multipart.FileHeader) (*string, error) {
+	if file == nil {
+		return nil, nil
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return nil, fmt.Errorf("gagal membuka file thumbnail")
+	}
+	defer src.Close()
+
+	buf, err := io.ReadAll(src)
+	if err != nil {
+		return nil, fmt.Errorf("gagal membaca file thumbnail")
+	}
+	if len(buf) == 0 {
+		return nil, fmt.Errorf("file thumbnail kosong")
+	}
+
+	mimeType := file.Header.Get("Content-Type")
+	if mimeType == "" || mimeType == "application/octet-stream" {
+		mimeType = http.DetectContentType(buf)
+	}
+
+	allowed := map[string]bool{
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/webp": true,
+	}
+	if !allowed[mimeType] {
+		return nil, fmt.Errorf("format thumbnail tidak didukung, gunakan JPG/PNG/WEBP")
+	}
+
+	base64Str := "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(buf)
+	return &base64Str, nil
+}
+
+func normalizeArtikelThumbnailURL(raw string) string {
+	thumb := strings.TrimSpace(raw)
+	if thumb == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(thumb, "data:image/") {
+		return thumb
+	}
+	if strings.HasPrefix(thumb, "http://") || strings.HasPrefix(thumb, "https://") {
+		return thumb
+	}
+	if strings.HasPrefix(thumb, "/static/") {
+		return thumb
+	}
+	if strings.HasPrefix(thumb, "/uploads/") {
+		return "/static" + thumb
+	}
+	if strings.HasPrefix(thumb, "uploads/") {
+		return "/static/" + thumb
+	}
+	if strings.HasPrefix(thumb, "static/") {
+		return "/" + thumb
+	}
+
+	if strings.Contains(thumb, ";base64,") && !strings.HasPrefix(thumb, "data:") {
+		return "data:image/jpeg;base64," + strings.TrimPrefix(thumb, ";base64,")
+	}
+
+	compact := strings.ReplaceAll(strings.ReplaceAll(thumb, "\n", ""), "\r", "")
+	if len(compact) > 100 && !strings.Contains(compact, " ") {
+		if _, err := base64.StdEncoding.DecodeString(compact); err == nil {
+			return "data:image/jpeg;base64," + compact
+		}
+	}
+
+	return thumb
+}
+
+func normalizeArtikelKonten(raw string) string {
+	content := strings.TrimSpace(raw)
+	if content == "" {
+		return "<p>Artikel sedang dalam proses penulisan.</p>"
+	}
+
+	if looksLikeHTML(content) {
+		return content
+	}
+
+	paragraphs := splitParagraphs(content)
+	if len(paragraphs) == 0 {
+		return "<p>Artikel sedang dalam proses penulisan.</p>"
+	}
+
+	var b strings.Builder
+	for _, p := range paragraphs {
+		escaped := html.EscapeString(strings.TrimSpace(p))
+		escaped = strings.ReplaceAll(escaped, "\n", "<br>")
+		if strings.TrimSpace(escaped) == "" {
+			continue
+		}
+		b.WriteString("<p>")
+		b.WriteString(escaped)
+		b.WriteString("</p>")
+	}
+
+	result := strings.TrimSpace(b.String())
+	if result == "" {
+		return "<p>Artikel sedang dalam proses penulisan.</p>"
+	}
+	return result
+}
+
+func splitParagraphs(content string) []string {
+	normalized := strings.ReplaceAll(content, "\r\n", "\n")
+	return strings.Split(normalized, "\n\n")
+}
+
+func looksLikeHTML(content string) bool {
+	re := regexp.MustCompile(`(?i)<\s*(p|div|h1|h2|h3|h4|h5|h6|ul|ol|li|blockquote|strong|em|u|a|img|table|br)\b`)
+	return re.MatchString(content)
 }

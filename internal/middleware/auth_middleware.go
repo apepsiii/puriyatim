@@ -22,35 +22,39 @@ func NewAuthMiddleware(authService *services.AuthService) *AuthMiddleware {
 // RequireAuth middleware to check if user is authenticated
 func (m *AuthMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Get token from header
-		authHeader := c.Request().Header.Get("Authorization")
-		if authHeader == "" {
+		token, err := extractToken(c)
+		if err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "authorization header required",
+				"error": err.Error(),
 			})
 		}
 
-		// Check if token format is correct
-		tokenParts := strings.Split(authHeader, " ")
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "invalid authorization header format",
-			})
-		}
-
-		// Validate token
-		claims, err := m.authService.ValidateToken(tokenParts[1])
+		claims, err := m.authService.ValidateToken(token)
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "invalid token",
 			})
 		}
 
-		// Set user context
-		c.Set("user_id", claims.ID)
-		c.Set("user_email", claims.Email)
-		c.Set("user_role", claims.Peran)
+		setUserContext(c, claims)
 
+		return next(c)
+	}
+}
+
+func (m *AuthMiddleware) RequireAdminSession(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token, err := extractToken(c)
+		if err != nil {
+			return unauthorized(c)
+		}
+
+		claims, err := m.authService.ValidateToken(token)
+		if err != nil {
+			return unauthorized(c)
+		}
+
+		setUserContext(c, claims)
 		return next(c)
 	}
 }
@@ -100,4 +104,44 @@ func (m *AuthMiddleware) RequireKeuangan() echo.MiddlewareFunc {
 // RequirePenulisBerita middleware to check if user is penulis berita or superadmin
 func (m *AuthMiddleware) RequirePenulisBerita() echo.MiddlewareFunc {
 	return m.RequireRole(models.PeranPenulisBerita, models.PeranSuperadmin)
+}
+
+func extractToken(c echo.Context) (string, error) {
+	authHeader := strings.TrimSpace(c.Request().Header.Get("Authorization"))
+	if authHeader != "" {
+		tokenParts := strings.Split(authHeader, " ")
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			return "", echo.NewHTTPError(http.StatusUnauthorized, "invalid authorization header format")
+		}
+		return tokenParts[1], nil
+	}
+
+	cookie, err := c.Cookie("token")
+	if err == nil && cookie != nil && strings.TrimSpace(cookie.Value) != "" {
+		return strings.TrimSpace(cookie.Value), nil
+	}
+
+	return "", echo.NewHTTPError(http.StatusUnauthorized, "authorization required")
+}
+
+func setUserContext(c echo.Context, claims *services.Claims) {
+	c.Set("user_id", claims.ID)
+	c.Set("user_email", claims.Email)
+	c.Set("user_role", claims.Peran)
+	c.Set("user_role_str", string(claims.Peran))
+}
+
+func unauthorized(c echo.Context) error {
+	accept := strings.ToLower(c.Request().Header.Get("Accept"))
+	requestedWith := strings.ToLower(c.Request().Header.Get("X-Requested-With"))
+	isJSON := strings.Contains(accept, "application/json") ||
+		strings.HasPrefix(c.Path(), "/api/") ||
+		requestedWith == "xmlhttprequest" ||
+		c.Request().Method != http.MethodGet
+	if isJSON {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+	}
+	return c.Redirect(http.StatusFound, "/admin/login?error=Sesi berakhir, silakan login kembali")
 }

@@ -16,11 +16,21 @@ type KeuanganRepository struct {
 }
 
 func NewKeuanganRepository(db *sql.DB) *KeuanganRepository {
-	return &KeuanganRepository{db: db}
+	repo := &KeuanganRepository{db: db}
+	repo.ensurePemasukanStatusColumn()
+	return repo
 }
 
 func (r *KeuanganRepository) generateID() string {
 	return uuid.New().String()[:8]
+}
+
+func (r *KeuanganRepository) ensurePemasukanStatusColumn() {
+	query := `
+		ALTER TABLE PEMASUKAN_DONASI
+		ADD COLUMN status_verifikasi TEXT NOT NULL DEFAULT 'verified'
+	`
+	_, _ = r.db.Exec(query)
 }
 
 func (r *KeuanganRepository) CreatePemasukan(p *models.PemasukanDonasi) error {
@@ -30,13 +40,16 @@ func (r *KeuanganRepository) CreatePemasukan(p *models.PemasukanDonasi) error {
 	now := time.Now()
 	p.CreatedAt = now
 	p.UpdatedAt = now
+	if p.StatusVerifikasi == "" {
+		p.StatusVerifikasi = models.StatusVerifikasiPending
+	}
 
 	query := `
-		INSERT INTO PEMASUKAN_DONASI (id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO PEMASUKAN_DONASI (id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.Exec(query, p.ID, p.NamaDonatur, p.TanggalDonasi, p.Nominal, p.KategoriDana, p.Catatan, p.BuktiTransaksi, p.CreatedAt, p.UpdatedAt)
+	_, err := r.db.Exec(query, p.ID, p.NamaDonatur, p.TanggalDonasi, p.Nominal, p.KategoriDana, p.Catatan, p.BuktiTransaksi, p.StatusVerifikasi, p.CreatedAt, p.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create pemasukan: %w", err)
 	}
@@ -45,15 +58,15 @@ func (r *KeuanganRepository) CreatePemasukan(p *models.PemasukanDonasi) error {
 
 func (r *KeuanganRepository) GetPemasukanByID(id string) (*models.PemasukanDonasi, error) {
 	query := `
-		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, created_at, updated_at
+		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at
 		FROM PEMASUKAN_DONASI WHERE id_pemasukan = ?
 	`
 
 	var p models.PemasukanDonasi
-	var namaDonatur, catatan, bukti sql.NullString
+	var namaDonatur, catatan, bukti, status sql.NullString
 
 	err := r.db.QueryRow(query, id).Scan(
-		&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &p.CreatedAt, &p.UpdatedAt,
+		&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &status, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -73,13 +86,14 @@ func (r *KeuanganRepository) GetPemasukanByID(id string) (*models.PemasukanDonas
 	if bukti.Valid {
 		p.BuktiTransaksi = bukti.String
 	}
+	p.StatusVerifikasi = normalizeStatus(status.String)
 
 	return &p, nil
 }
 
 func (r *KeuanganRepository) GetAllPemasukan() ([]*models.PemasukanDonasi, error) {
 	query := `
-		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, created_at, updated_at
+		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at
 		FROM PEMASUKAN_DONASI ORDER BY created_at DESC
 	`
 
@@ -92,9 +106,9 @@ func (r *KeuanganRepository) GetAllPemasukan() ([]*models.PemasukanDonasi, error
 	var list []*models.PemasukanDonasi
 	for rows.Next() {
 		var p models.PemasukanDonasi
-		var namaDonatur, catatan, bukti sql.NullString
+		var namaDonatur, catatan, bukti, status sql.NullString
 
-		if err := rows.Scan(&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &status, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan pemasukan: %w", err)
 		}
 
@@ -109,6 +123,7 @@ func (r *KeuanganRepository) GetAllPemasukan() ([]*models.PemasukanDonasi, error
 		if bukti.Valid {
 			p.BuktiTransaksi = bukti.String
 		}
+		p.StatusVerifikasi = normalizeStatus(status.String)
 
 		list = append(list, &p)
 	}
@@ -118,7 +133,7 @@ func (r *KeuanganRepository) GetAllPemasukan() ([]*models.PemasukanDonasi, error
 
 func (r *KeuanganRepository) GetPemasukanByDateRange(start, end time.Time) ([]*models.PemasukanDonasi, error) {
 	query := `
-		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, created_at, updated_at
+		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at
 		FROM PEMASUKAN_DONASI WHERE tanggal_donasi BETWEEN ? AND ? ORDER BY tanggal_donasi DESC
 	`
 
@@ -131,9 +146,9 @@ func (r *KeuanganRepository) GetPemasukanByDateRange(start, end time.Time) ([]*m
 	var list []*models.PemasukanDonasi
 	for rows.Next() {
 		var p models.PemasukanDonasi
-		var namaDonatur, catatan, bukti sql.NullString
+		var namaDonatur, catatan, bukti, status sql.NullString
 
-		if err := rows.Scan(&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &status, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan pemasukan: %w", err)
 		}
 
@@ -148,6 +163,7 @@ func (r *KeuanganRepository) GetPemasukanByDateRange(start, end time.Time) ([]*m
 		if bukti.Valid {
 			p.BuktiTransaksi = bukti.String
 		}
+		p.StatusVerifikasi = normalizeStatus(status.String)
 
 		list = append(list, &p)
 	}
@@ -324,7 +340,7 @@ func (r *KeuanganRepository) GetPengeluaranByDateRange(start, end time.Time) ([]
 }
 
 func (r *KeuanganRepository) GetTotalPemasukan() (float64, error) {
-	query := `SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI`
+	query := `SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI WHERE status_verifikasi = 'verified'`
 	var total float64
 	err := r.db.QueryRow(query).Scan(&total)
 	if err != nil {
@@ -344,7 +360,7 @@ func (r *KeuanganRepository) GetTotalPengeluaran() (float64, error) {
 }
 
 func (r *KeuanganRepository) GetTotalPemasukanByMonth(year, month int) (float64, error) {
-	query := `SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI WHERE strftime('%Y', tanggal_donasi) = ? AND strftime('%m', tanggal_donasi) = ?`
+	query := `SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI WHERE status_verifikasi = 'verified' AND strftime('%Y', tanggal_donasi) = ? AND strftime('%m', tanggal_donasi) = ?`
 	var total float64
 	monthStr := fmt.Sprintf("%02d", month)
 	err := r.db.QueryRow(query, fmt.Sprintf("%d", year), monthStr).Scan(&total)
@@ -477,11 +493,11 @@ func (r *KeuanganRepository) UpdatePemasukan(p *models.PemasukanDonasi) error {
 
 	query := `
 		UPDATE PEMASUKAN_DONASI SET
-			nama_donatur = ?, tanggal_donasi = ?, nominal = ?, kategori_dana = ?, catatan = ?, bukti_transaksi = ?, updated_at = ?
+			nama_donatur = ?, tanggal_donasi = ?, nominal = ?, kategori_dana = ?, catatan = ?, bukti_transaksi = ?, status_verifikasi = ?, updated_at = ?
 		WHERE id_pemasukan = ?
 	`
 
-	_, err := r.db.Exec(query, p.NamaDonatur, p.TanggalDonasi, p.Nominal, p.KategoriDana, p.Catatan, p.BuktiTransaksi, p.UpdatedAt, p.ID)
+	_, err := r.db.Exec(query, p.NamaDonatur, p.TanggalDonasi, p.Nominal, p.KategoriDana, p.Catatan, p.BuktiTransaksi, p.StatusVerifikasi, p.UpdatedAt, p.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update pemasukan: %w", err)
 	}
@@ -522,7 +538,7 @@ func (r *KeuanganRepository) GetPemasukanByMonthStr(monthStr string) ([]*models.
 	year := parts[1]
 
 	query := `
-		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, created_at, updated_at
+		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at
 		FROM PEMASUKAN_DONASI 
 		WHERE strftime('%m', tanggal_donasi) = ? AND strftime('%Y', tanggal_donasi) = ?
 		ORDER BY created_at DESC
@@ -537,9 +553,9 @@ func (r *KeuanganRepository) GetPemasukanByMonthStr(monthStr string) ([]*models.
 	var list []*models.PemasukanDonasi
 	for rows.Next() {
 		var p models.PemasukanDonasi
-		var namaDonatur, catatan, bukti sql.NullString
+		var namaDonatur, catatan, bukti, status sql.NullString
 
-		if err := rows.Scan(&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &status, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan pemasukan: %w", err)
 		}
 
@@ -554,11 +570,43 @@ func (r *KeuanganRepository) GetPemasukanByMonthStr(monthStr string) ([]*models.
 		if bukti.Valid {
 			p.BuktiTransaksi = bukti.String
 		}
+		p.StatusVerifikasi = normalizeStatus(status.String)
 
 		list = append(list, &p)
 	}
 
 	return list, nil
+}
+
+func (r *KeuanganRepository) VerifyPemasukan(id string) error {
+	query := `
+		UPDATE PEMASUKAN_DONASI
+		SET status_verifikasi = 'verified', updated_at = ?
+		WHERE id_pemasukan = ?
+	`
+	result, err := r.db.Exec(query, time.Now(), id)
+	if err != nil {
+		return fmt.Errorf("failed to verify pemasukan: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to verify pemasukan: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("pemasukan not found")
+	}
+	return nil
+}
+
+func normalizeStatus(status string) models.StatusVerifikasiPemasukan {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case string(models.StatusVerifikasiPending):
+		return models.StatusVerifikasiPending
+	case string(models.StatusVerifikasiVerified):
+		return models.StatusVerifikasiVerified
+	default:
+		return models.StatusVerifikasiVerified
+	}
 }
 
 func (r *KeuanganRepository) GetPengeluaranByMonthStr(monthStr string) ([]*models.Pengeluaran, error) {
@@ -606,6 +654,49 @@ func (r *KeuanganRepository) GetPengeluaranByMonthStr(monthStr string) ([]*model
 		if bukti.Valid {
 			p.BuktiTransaksi = bukti.String
 		}
+
+		list = append(list, &p)
+	}
+
+	return list, nil
+}
+
+func (r *KeuanganRepository) GetPemasukanByNomorHP(nomorHP string) ([]*models.PemasukanDonasi, error) {
+	query := `
+		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at
+		FROM PEMASUKAN_DONASI
+		WHERE LOWER(catatan) LIKE ?
+		ORDER BY created_at DESC
+		LIMIT 100
+	`
+	pattern := "%nomor hp: " + strings.ToLower(strings.TrimSpace(nomorHP)) + "%"
+
+	rows, err := r.db.Query(query, pattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query pemasukan by nomor hp: %w", err)
+	}
+	defer rows.Close()
+
+	var list []*models.PemasukanDonasi
+	for rows.Next() {
+		var p models.PemasukanDonasi
+		var namaDonatur, catatan, bukti, status sql.NullString
+
+		if err := rows.Scan(&p.ID, &namaDonatur, &p.TanggalDonasi, &p.Nominal, &p.KategoriDana, &catatan, &bukti, &status, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan pemasukan by nomor hp: %w", err)
+		}
+		if namaDonatur.Valid {
+			p.NamaDonatur = namaDonatur.String
+		} else {
+			p.NamaDonatur = "Hamba Allah"
+		}
+		if catatan.Valid {
+			p.Catatan = catatan.String
+		}
+		if bukti.Valid {
+			p.BuktiTransaksi = bukti.String
+		}
+		p.StatusVerifikasi = normalizeStatus(status.String)
 
 		list = append(list, &p)
 	}

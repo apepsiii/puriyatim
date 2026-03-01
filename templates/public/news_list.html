@@ -78,7 +78,7 @@
                     <div class="flex gap-4 p-4">
                         <div class="w-28 h-28 rounded-xl bg-gray-100 relative overflow-hidden flex-shrink-0">
                             {{if .GambarThumbnail}}
-                            <img src="{{.GambarThumbnail}}" alt="{{.Judul}}" class="w-full h-full object-cover">
+                            <img src="{{.GambarThumbnail | safeImageURL}}" alt="{{.Judul}}" class="w-full h-full object-cover">
                             {{else}}
                             <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
                                 <i class="fas fa-newspaper text-3xl text-emerald-300"></i>

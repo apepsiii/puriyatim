@@ -63,6 +63,9 @@
             <a href="/admin/artikel" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
             </a>
@@ -118,7 +121,7 @@
                 <p class="text-sm text-gray-500 mt-1">{{if .IsEdit}}Perbarui data anak asuh di bawah ini.{{else}}Lengkapi data di bawah ini dengan benar untuk pendaftaran anak asuh baru.{{end}}</p>
             </div>
 
-            <form action="{{if .IsEdit}}/admin/anak-asuh/{{.AnakAsuh.ID}}{{else}}/admin/anak-asuh{{end}}" method="POST" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden max-w-5xl">
+            <form action="{{if .IsEdit}}/admin/anak-asuh/{{.AnakAsuh.ID}}{{else}}/admin/anak-asuh{{end}}" method="POST" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden max-w-5xl">
                 
                 <div class="p-6 sm:p-8 border-b border-gray-100">
                     <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
@@ -286,14 +289,27 @@
                 <div class="p-6 sm:p-8 border-b border-gray-100">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Foto Profil Anak (Opsional)</label>
                     <div class="flex items-center gap-4">
-                        <div class="w-20 h-20 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
-                            <i class="fas fa-camera text-xl mb-1"></i>
+                        <div id="imagePreview" class="w-24 h-24 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 overflow-hidden">
+                            {{if .IsEdit}}{{if .AnakAsuh.FotoProfilURL}}
+                            <img src="{{.AnakAsuh.FotoProfilURL}}" alt="Preview" class="w-full h-full object-cover">
+                            {{else}}
+                            <i class="fas fa-camera text-2xl mb-1"></i>
+                            <span class="text-xs">Preview</span>
+                            {{end}}{{else}}
+                            <i class="fas fa-camera text-2xl mb-1"></i>
+                            <span class="text-xs">Preview</span>
+                            {{end}}
                         </div>
                         <div>
-                            <button type="button" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                            <input type="file" id="fotoProfilInput" name="foto_profil" accept="image/jpeg,image/png,image/jpg" class="hidden" onchange="previewImage(event)">
+                            <button type="button" onclick="document.getElementById('fotoProfilInput').click()" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                                <i class="fas fa-upload"></i>
                                 Pilih Foto...
                             </button>
                             <p class="text-xs text-gray-500 mt-2">Format JPG/PNG maksimal 2MB.</p>
+                            <button type="button" id="removeImageBtn" onclick="removeImage()" class="text-xs text-red-600 hover:text-red-700 mt-1 hidden">
+                                <i class="fas fa-times"></i> Hapus Foto
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -319,6 +335,56 @@
             const overlay = document.getElementById('mobileOverlay');
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
+        }
+
+        // Image preview functionality
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            const removeBtn = document.getElementById('removeImageBtn');
+            
+            if (file) {
+                // Validate file size (2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Terlalu Besar',
+                        text: 'Ukuran file maksimal 2MB',
+                        confirmButtonColor: '#ef4444'
+                    });
+                    event.target.value = '';
+                    return;
+                }
+                
+                // Validate file type
+                if (!file.type.match('image/(jpeg|jpg|png)')) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Format File Tidak Valid',
+                        text: 'Hanya file JPG/PNG yang diperbolehkan',
+                        confirmButtonColor: '#ef4444'
+                    });
+                    event.target.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview" class="w-full h-full object-cover">';
+                    removeBtn.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function removeImage() {
+            const input = document.getElementById('fotoProfilInput');
+            const preview = document.getElementById('imagePreview');
+            const removeBtn = document.getElementById('removeImageBtn');
+            
+            input.value = '';
+            preview.innerHTML = '<i class="fas fa-camera text-2xl mb-1"></i><span class="text-xs">Preview</span>';
+            removeBtn.classList.add('hidden');
         }
 
         {{if .Flash}}

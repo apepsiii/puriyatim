@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 	"puriyatim-app/internal/services"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -10,11 +12,13 @@ import (
 
 type AuthHandler struct {
 	authService *services.AuthService
+	limiter     *loginAttemptLimiter
 }
 
 func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		limiter:     newLoginAttemptLimiter(),
 	}
 }
 
@@ -32,11 +36,16 @@ func (h *AuthHandler) LoginPage(c echo.Context) error {
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
-	email := c.FormValue("email")
-	password := c.FormValue("password")
+	email := strings.ToLower(strings.TrimSpace(c.FormValue("email")))
+	password := strings.TrimSpace(c.FormValue("password"))
+	clientIP := strings.TrimSpace(c.RealIP())
+	limiterKey := clientIP + "|" + email
 
 	if email == "" || password == "" {
 		return c.Redirect(http.StatusFound, "/admin/login?error=Email dan password harus diisi")
+	}
+	if !h.limiter.allow(limiterKey) {
+		return c.Redirect(http.StatusFound, "/admin/login?error=Terlalu banyak percobaan login. Coba lagi beberapa menit.")
 	}
 
 	req := &services.LoginRequest{
@@ -46,7 +55,15 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	response, err := h.authService.Login(req)
 	if err != nil {
+		h.limiter.fail(limiterKey)
 		return c.Redirect(http.StatusFound, "/admin/login?error=Email atau password salah")
+	}
+	h.limiter.success(limiterKey)
+
+	remember := c.FormValue("remember") == "on"
+	cookieDuration := 8 * time.Hour
+	if remember {
+		cookieDuration = 7 * 24 * time.Hour
 	}
 
 	cookie := &http.Cookie{
@@ -54,18 +71,21 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		Expires:  time.Now().Add(24 * time.Hour),
+		Secure:   isSecureRequest(c),
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(cookieDuration),
+		MaxAge:   int(cookieDuration.Seconds()),
 	}
 	c.SetCookie(cookie)
+	c.Response().Header().Set("Cache-Control", "no-store")
 
 	return c.Redirect(http.StatusFound, "/admin/dashboard")
 }
 
 func (h *AuthHandler) GetProfile(c echo.Context) error {
-	userID := c.Get("user_id").(string)
-	userEmail := c.Get("user_email").(string)
-	userRole := c.Get("user_role").(string)
+	userID, _ := c.Get("user_id").(string)
+	userEmail, _ := c.Get("user_email").(string)
+	userRole, _ := c.Get("user_role").(string)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"id":    userID,
@@ -75,7 +95,12 @@ func (h *AuthHandler) GetProfile(c echo.Context) error {
 }
 
 func (h *AuthHandler) ChangePassword(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID, _ := c.Get("user_id").(string)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+	}
 
 	var req ChangePasswordRequest
 	if err := c.Bind(&req); err != nil {
@@ -91,9 +116,9 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 		})
 	}
 
-	if len(req.NewPassword) < 6 {
+	if len(req.NewPassword) < 8 {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "password baru minimal 6 karakter",
+			"error": "password baru minimal 8 karakter",
 		})
 	}
 
@@ -111,10 +136,106 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 }
 
 func (h *AuthHandler) Logout(c echo.Context) error {
-	// In a stateless JWT implementation, logout is typically handled client-side
-	// by simply discarding the token. However, we can provide a response to confirm
-	// the logout action.
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "logout berhasil",
-	})
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   isSecureRequest(c),
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+	}
+	c.SetCookie(cookie)
+
+	if strings.Contains(strings.ToLower(c.Request().Header.Get("Accept")), "application/json") {
+		return c.JSON(http.StatusOK, map[string]string{
+			"message": "logout berhasil",
+		})
+	}
+	return c.Redirect(http.StatusFound, "/admin/login")
+}
+
+type loginAttemptLimiter struct {
+	mu       sync.Mutex
+	attempts map[string]attemptState
+}
+
+type attemptState struct {
+	Count        int
+	FirstAttempt time.Time
+	BlockedUntil time.Time
+}
+
+func newLoginAttemptLimiter() *loginAttemptLimiter {
+	return &loginAttemptLimiter{
+		attempts: make(map[string]attemptState),
+	}
+}
+
+func (l *loginAttemptLimiter) allow(key string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	now := time.Now()
+	l.cleanup(now)
+
+	state, ok := l.attempts[key]
+	if !ok {
+		return true
+	}
+	if state.BlockedUntil.After(now) {
+		return false
+	}
+	return true
+}
+
+func (l *loginAttemptLimiter) fail(key string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	now := time.Now()
+	state := l.attempts[key]
+	if state.FirstAttempt.IsZero() || now.Sub(state.FirstAttempt) > 15*time.Minute {
+		state = attemptState{
+			Count:        1,
+			FirstAttempt: now,
+		}
+		l.attempts[key] = state
+		return
+	}
+
+	state.Count++
+	if state.Count >= 5 {
+		state.BlockedUntil = now.Add(15 * time.Minute)
+	}
+	l.attempts[key] = state
+}
+
+func (l *loginAttemptLimiter) success(key string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.attempts, key)
+}
+
+func (l *loginAttemptLimiter) cleanup(now time.Time) {
+	for key, state := range l.attempts {
+		if state.BlockedUntil.IsZero() && now.Sub(state.FirstAttempt) > 30*time.Minute {
+			delete(l.attempts, key)
+			continue
+		}
+		if !state.BlockedUntil.IsZero() && now.After(state.BlockedUntil.Add(30*time.Minute)) {
+			delete(l.attempts, key)
+		}
+	}
+}
+
+func isSecureRequest(c echo.Context) bool {
+	if c.IsTLS() {
+		return true
+	}
+	if strings.EqualFold(c.Request().Header.Get("X-Forwarded-Proto"), "https") {
+		return true
+	}
+	return false
 }

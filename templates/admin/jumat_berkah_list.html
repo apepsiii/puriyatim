@@ -54,6 +54,9 @@
             <a href="/admin/artikel" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
             </a>
@@ -109,6 +112,9 @@
                     <p class="text-sm text-gray-500 mt-1">Periode minggu ini: <span class="font-semibold text-gray-800">{{.CurrentPeriod}}</span></p>
                 </div>
                 <div class="flex items-center gap-3">
+                    <button onclick="openManualRegisterModal()" class="bg-primary hover:bg-primary_dark text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <i class="fas fa-user-plus"></i> Tambah Manual
+                    </button>
                     <button onclick="openQuotaModal()" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                         <i class="fas fa-cog text-gray-400"></i> Atur Kuota
                     </button>
@@ -300,6 +306,87 @@
         </div>
     </div>
 
+    <div id="manualRegisterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onclick="closeManualRegisterModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 relative z-10 max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Pendaftaran Manual Jumat Berkah</h3>
+                    <p class="text-sm text-gray-500">Daftarkan anak asuh langsung dari panel admin.</p>
+                </div>
+                <button onclick="closeManualRegisterModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <div class="mb-3">
+                <input type="text" id="manualSearchInput" onkeyup="filterManualCandidates()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors" placeholder="Cari nama anak / ID / wilayah...">
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-auto flex-1">
+                <table class="w-full text-sm text-left text-gray-600">
+                    <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200 sticky top-0">
+                        <tr>
+                            <th class="p-3 w-4">
+                                <input id="manual-checkbox-all" type="checkbox" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500" onchange="toggleAllManualCheckboxes(this)">
+                            </th>
+                            <th class="px-3 py-3">Anak Asuh</th>
+                            <th class="px-3 py-3">Wilayah</th>
+                            <th class="px-3 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="manualCandidatesBody" class="divide-y divide-gray-100">
+                        {{range .ManualCandidates}}
+                        <tr class="manual-candidate-row hover:bg-gray-50" data-search="{{.NamaLengkap | lower}} {{.ID | lower}} {{.Wilayah | lower}}">
+                            <td class="p-3 w-4">
+                                {{if .AlreadyReg}}
+                                <input type="checkbox" disabled class="w-4 h-4 text-gray-400 bg-gray-100 border-gray-300 rounded cursor-not-allowed">
+                                {{else}}
+                                <input type="checkbox" class="manual-row-checkbox w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500" value="{{.ID}}" onchange="updateManualSelectionCount()">
+                                {{end}}
+                            </td>
+                            <td class="px-3 py-3">
+                                <div class="font-semibold text-gray-900">{{.NamaLengkap}}</div>
+                                <div class="text-xs text-gray-500">ID: {{.ID}} | {{.Jenjang}}</div>
+                            </td>
+                            <td class="px-3 py-3">{{.Wilayah}}</td>
+                            <td class="px-3 py-3">
+                                {{if .AlreadyReg}}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">Sudah Terdaftar</span>
+                                {{else}}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">{{.StatusAnak}}</span>
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">Tidak ada data anak asuh tersedia.</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">
+                <label class="flex items-center gap-2 text-sm text-gray-700 mb-2">
+                    <input type="checkbox" id="manualAutoApprove" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500">
+                    Setujui langsung (tetap mengikuti kuota)
+                </label>
+                <textarea id="manualCatatan" rows="2" placeholder="Catatan admin (opsional)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors resize-none"></textarea>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+                <div class="text-sm text-gray-600"><span id="manualSelectedCount" class="font-bold text-primary">0</span> anak dipilih</div>
+                <div class="flex gap-2">
+                    <button onclick="closeManualRegisterModal()" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Batal</button>
+                    <button id="manualSubmitBtn" onclick="submitManualRegistration()" class="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary_dark transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+                        Simpan Pendaftaran
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -443,6 +530,83 @@
 
         function closeQuotaModal() {
             document.getElementById('kuotaModal').classList.add('hidden');
+        }
+
+        function openManualRegisterModal() {
+            document.getElementById('manualRegisterModal').classList.remove('hidden');
+            updateManualSelectionCount();
+        }
+
+        function closeManualRegisterModal() {
+            document.getElementById('manualRegisterModal').classList.add('hidden');
+            document.getElementById('manualSearchInput').value = '';
+            filterManualCandidates();
+            const checkboxes = document.querySelectorAll('.manual-row-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            document.getElementById('manual-checkbox-all').checked = false;
+            document.getElementById('manualAutoApprove').checked = false;
+            document.getElementById('manualCatatan').value = '';
+            updateManualSelectionCount();
+        }
+
+        function filterManualCandidates() {
+            const search = document.getElementById('manualSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.manual-candidate-row');
+            rows.forEach(row => {
+                const haystack = row.dataset.search || '';
+                row.style.display = haystack.includes(search) ? '' : 'none';
+            });
+        }
+
+        function toggleAllManualCheckboxes(source) {
+            const checkboxes = document.querySelectorAll('.manual-row-checkbox');
+            checkboxes.forEach(cb => {
+                if (cb.closest('tr').style.display !== 'none') {
+                    cb.checked = source.checked;
+                }
+            });
+            updateManualSelectionCount();
+        }
+
+        function updateManualSelectionCount() {
+            const selected = document.querySelectorAll('.manual-row-checkbox:checked').length;
+            document.getElementById('manualSelectedCount').textContent = selected;
+            document.getElementById('manualSubmitBtn').disabled = selected === 0;
+        }
+
+        function submitManualRegistration() {
+            const selected = Array.from(document.querySelectorAll('.manual-row-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+
+            const autoApprove = document.getElementById('manualAutoApprove').checked;
+            const catatan = encodeURIComponent(document.getElementById('manualCatatan').value || '');
+            const submitBtn = document.getElementById('manualSubmitBtn');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menyimpan...';
+
+            fetch('/admin/jumat-berkah/manual-register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'anak_ids=' + selected.join(',') + '&auto_approve=' + autoApprove + '&catatan=' + catatan
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, confirmButtonColor: '#10b981' })
+                        .then(() => location.reload());
+                    return;
+                }
+
+                Swal.fire({ icon: 'error', title: 'Gagal!', text: data.message || 'Terjadi kesalahan', confirmButtonColor: '#ef4444' });
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Simpan Pendaftaran';
+            })
+            .catch(() => {
+                Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Terjadi kesalahan saat menyimpan', confirmButtonColor: '#ef4444' });
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Simpan Pendaftaran';
+            });
         }
 
         function saveQuota() {

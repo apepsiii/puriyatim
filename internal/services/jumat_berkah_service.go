@@ -13,6 +13,17 @@ type JumatBerkahService struct {
 	anakAsuhRepo *repository.AnakAsuhRepository
 }
 
+type ManualRegistrationCandidate struct {
+	ID         string
+	NamaLengkap string
+	NamaPanggilan string
+	Jenjang    string
+	StatusAnak string
+	RT         string
+	RW         string
+	AlreadyReg bool
+}
+
 func NewJumatBerkahService(repo *repository.JumatBerkahRepository, anakAsuhRepo *repository.AnakAsuhRepository) *JumatBerkahService {
 	s := &JumatBerkahService{
 		repo:         repo,
@@ -88,9 +99,89 @@ func (s *JumatBerkahService) CountApprovedByKegiatan(kegiatanID string) (int, er
 }
 
 func (s *JumatBerkahService) CreateRegistration(anakAsuhID, namaAnak, jenjang, statusAnak, rw, rt string) (*models.PendaftarJumatBerkah, error) {
+	return s.createRegistrationWithOptions(anakAsuhID, namaAnak, jenjang, statusAnak, rw, rt, false, false, "")
+}
+
+func (s *JumatBerkahService) CreateManualRegistration(anakAsuhID string, autoApprove bool, catatan string) (*models.PendaftarJumatBerkah, error) {
+	if s.anakAsuhRepo == nil {
+		return nil, fmt.Errorf("anak asuh repository is not available")
+	}
+
+	anak, err := s.anakAsuhRepo.GetByID(anakAsuhID)
+	if err != nil {
+		return nil, err
+	}
+
+	pendaftar, err := s.createRegistrationWithOptions(
+		anak.ID,
+		anak.NamaLengkap,
+		anak.JenjangPendidikan,
+		string(anak.StatusAnak),
+		anak.RW,
+		anak.RT,
+		true,
+		autoApprove,
+		catatan,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return pendaftar, nil
+}
+
+func (s *JumatBerkahService) GetManualRegistrationCandidates() ([]ManualRegistrationCandidate, error) {
+	if s.anakAsuhRepo == nil {
+		return []ManualRegistrationCandidate{}, nil
+	}
+
+	anakList, err := s.anakAsuhRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	kegiatan, _ := s.repo.GetCurrentKegiatan()
+
+	candidates := make([]ManualRegistrationCandidate, 0, len(anakList))
+	for _, anak := range anakList {
+		alreadyReg := false
+		if kegiatan != nil {
+			alreadyReg, _ = s.repo.IsAnakRegistered(kegiatan.ID, anak.ID)
+		}
+
+		jenjang := anak.JenjangPendidikan
+		if jenjang == "" {
+			jenjang = "Belum Sekolah"
+		}
+
+		candidates = append(candidates, ManualRegistrationCandidate{
+			ID:            anak.ID,
+			NamaLengkap:   anak.NamaLengkap,
+			NamaPanggilan: anak.NamaPanggilan,
+			Jenjang:       jenjang,
+			StatusAnak:    string(anak.StatusAnak),
+			RT:            anak.RT,
+			RW:            anak.RW,
+			AlreadyReg:    alreadyReg,
+		})
+	}
+
+	return candidates, nil
+}
+
+func (s *JumatBerkahService) createRegistrationWithOptions(
+	anakAsuhID, namaAnak, jenjang, statusAnak, rw, rt string,
+	bypassFormStatus bool,
+	autoApprove bool,
+	catatan string,
+) (*models.PendaftarJumatBerkah, error) {
 	kegiatan, err := s.repo.GetCurrentKegiatan()
 	if err != nil || kegiatan == nil {
 		return nil, fmt.Errorf("no active kegiatan")
+	}
+
+	if !bypassFormStatus && kegiatan.StatusKegiatan != models.StatusKegiatanDibuka {
+		return nil, fmt.Errorf("form pendaftaran sedang ditutup")
 	}
 
 	isRegistered, _ := s.repo.IsAnakRegistered(kegiatan.ID, anakAsuhID)
@@ -101,6 +192,7 @@ func (s *JumatBerkahService) CreateRegistration(anakAsuhID, namaAnak, jenjang, s
 	pendaftar := &models.PendaftarJumatBerkah{
 		IDKegiatan: kegiatan.ID,
 		IDAnak:     anakAsuhID,
+		Catatan:    catatan,
 	}
 
 	err = s.repo.CreatePendaftar(pendaftar)
@@ -117,6 +209,16 @@ func (s *JumatBerkahService) CreateRegistration(anakAsuhID, namaAnak, jenjang, s
 		RW:                rw,
 	}
 
+	if autoApprove {
+		if err := s.ensureApproveQuotaAvailable(kegiatan); err != nil {
+			return nil, err
+		}
+		if err := s.repo.UpdatePendaftarStatus(pendaftar.ID, models.StatusApprovalDisetujui); err != nil {
+			return nil, err
+		}
+		pendaftar.StatusApproval = models.StatusApprovalDisetujui
+	}
+
 	return pendaftar, nil
 }
 
@@ -128,6 +230,14 @@ func (s *JumatBerkahService) ApproveRegistration(id string) error {
 
 	if pendaftar.StatusApproval != models.StatusApprovalMenunggu {
 		return fmt.Errorf("registration is not pending")
+	}
+
+	kegiatan, err := s.repo.GetKegiatanByID(pendaftar.IDKegiatan)
+	if err != nil {
+		return err
+	}
+	if err := s.ensureApproveQuotaAvailable(kegiatan); err != nil {
+		return err
 	}
 
 	return s.repo.UpdatePendaftarStatus(id, models.StatusApprovalDisetujui)
@@ -147,7 +257,12 @@ func (s *JumatBerkahService) RejectRegistration(id string) error {
 }
 
 func (s *JumatBerkahService) ApproveMultiple(ids []string) int {
-	count, _ := s.repo.UpdateMultiplePendaftarStatus(ids, models.StatusApprovalDisetujui)
+	count := 0
+	for _, id := range ids {
+		if err := s.ApproveRegistration(id); err == nil {
+			count++
+		}
+	}
 	return count
 }
 
@@ -179,6 +294,14 @@ func (s *JumatBerkahService) UpdateQuota(quota int) error {
 	kegiatan, err := s.repo.GetCurrentKegiatan()
 	if err != nil || kegiatan == nil {
 		return fmt.Errorf("no active kegiatan")
+	}
+
+	approved, err := s.repo.CountApprovedByKegiatan(kegiatan.ID)
+	if err != nil {
+		return err
+	}
+	if quota < approved {
+		return fmt.Errorf("kuota tidak boleh lebih kecil dari jumlah disetujui (%d)", approved)
 	}
 
 	kegiatan.KuotaMaksimal = quota
@@ -242,4 +365,20 @@ func (s *JumatBerkahService) CountPendaftar() (int, error) {
 
 func (s *JumatBerkahService) GetPendaftarByAnakID(anakID string) ([]*models.PendaftarJumatBerkah, error) {
 	return s.repo.GetPendaftarByAnakID(anakID)
+}
+
+func (s *JumatBerkahService) ensureApproveQuotaAvailable(kegiatan *models.KegiatanJumatBerkah) error {
+	if kegiatan == nil {
+		return fmt.Errorf("no active kegiatan")
+	}
+
+	approved, err := s.repo.CountApprovedByKegiatan(kegiatan.ID)
+	if err != nil {
+		return err
+	}
+	if approved >= kegiatan.KuotaMaksimal {
+		return fmt.Errorf("kuota penuh, tidak bisa menyetujui pendaftar tambahan")
+	}
+
+	return nil
 }

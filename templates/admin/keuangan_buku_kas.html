@@ -52,6 +52,9 @@
             <a href="/admin/artikel" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
             </a>
@@ -221,6 +224,13 @@
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium {{.KategoriCSS}}">
                                         {{.Kategori}}
                                     </span>
+                                    {{if eq .Type "masuk"}}
+                                    <div class="mt-2">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium {{.StatusCSS}}">
+                                            {{.StatusLabel}}
+                                        </span>
+                                    </div>
+                                    {{end}}
                                 </td>
                                 <td class="px-6 py-4 text-right whitespace-nowrap">
                                     {{if eq .Type "masuk"}}
@@ -240,6 +250,11 @@
                                     <button onclick="showDetail('{{.ID}}', '{{.Type}}')" class="text-gray-400 hover:text-blue-600 p-2 transition-colors" title="Lihat Detail">
                                         <i class="fas fa-eye"></i>
                                     </button>
+                                    {{if and (eq .Type "masuk") (eq .Status "pending")}}
+                                    <button onclick="verifyPemasukan('{{.ID}}')" class="text-amber-500 hover:text-emerald-600 p-2 transition-colors" title="Verifikasi Pemasukan">
+                                        <i class="fas fa-badge-check"></i>
+                                    </button>
+                                    {{end}}
                                 </td>
                             </tr>
                             {{end}}
@@ -334,6 +349,12 @@
                                     <span class="text-gray-500 text-sm">Kategori</span>
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${isMasuk ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}">${data.kategori}</span>
                                 </div>
+                                ${isMasuk ? `
+                                <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                                    <span class="text-gray-500 text-sm">Status Verifikasi</span>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${data.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}">${data.status_label || '-'}</span>
+                                </div>
+                                ` : ''}
                                 <div class="flex justify-between items-center py-3 border-b border-gray-100">
                                     <span class="text-gray-500 text-sm">${isMasuk ? 'Sumber / Donatur' : 'Anak Asuh'}</span>
                                     <span class="font-medium">${data.sumber || '-'}</span>
@@ -690,6 +711,63 @@
                 }
             } else {
                 showDetail(id, type);
+            }
+        }
+
+        async function verifyPemasukan(id) {
+            const confirmResult = await Swal.fire({
+                title: 'Verifikasi Pemasukan?',
+                text: 'Setelah diverifikasi, nominal akan masuk ke total saldo kas.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check mr-1"></i> Verifikasi',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280'
+            });
+
+            if (!confirmResult.isConfirmed) {
+                return;
+            }
+
+            Swal.fire({
+                title: 'Memproses...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await fetch('/admin/keuangan/pemasukan/' + id + '/verify', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: result.message,
+                        confirmButtonColor: '#10b981'
+                    });
+                    location.reload();
+                    return;
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: result.message,
+                    confirmButtonColor: '#10b981'
+                });
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Gagal memverifikasi pemasukan',
+                    confirmButtonColor: '#10b981'
+                });
             }
         }
     </script>

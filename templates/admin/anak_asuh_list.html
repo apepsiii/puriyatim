@@ -68,6 +68,9 @@
                 <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i>
                 Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i>
                 Pengaturan Web
@@ -126,9 +129,46 @@
                     <p class="text-sm text-gray-500 mt-1">Kelola data identitas, pendidikan, dan domisili anak asuh.</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-                        <i class="fas fa-file-export text-gray-400"></i> Export
-                    </button>
+                    <!-- Export Dropdown -->
+                    <div class="relative" id="exportDropdown">
+                        <button onclick="toggleExportMenu()" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                            <i class="fas fa-file-export text-gray-400"></i> Export
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="exportMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                            <div class="py-1">
+                                <a href="/admin/anak-asuh/export/excel" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-file-excel text-green-600 w-5"></i>
+                                    <div>
+                                        <div class="font-medium">Export ke Excel</div>
+                                        <div class="text-xs text-gray-500">Format .xlsx</div>
+                                    </div>
+                                </a>
+                                <a href="/admin/anak-asuh/export/csv" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-file-csv text-blue-600 w-5"></i>
+                                    <div>
+                                        <div class="font-medium">Export ke CSV</div>
+                                        <div class="text-xs text-gray-500">Format .csv</div>
+                                    </div>
+                                </a>
+                                <hr class="my-1 border-gray-200">
+                                <a href="/admin/anak-asuh/export/template" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-download text-purple-600 w-5"></i>
+                                    <div>
+                                        <div class="font-medium">Download Template</div>
+                                        <div class="text-xs text-gray-500">Template import</div>
+                                    </div>
+                                </a>
+                                <button onclick="openImportModal()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-file-import text-orange-600 w-5"></i>
+                                    <div class="text-left">
+                                        <div class="font-medium">Import Data</div>
+                                        <div class="text-xs text-gray-500">Upload Excel/CSV</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <a href="/admin/anak-asuh/tambah" class="bg-primary hover:bg-primary_dark text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                         <i class="fas fa-user-plus"></i> Tambah Data
                     </a>
@@ -148,15 +188,21 @@
                     <div class="flex gap-2 w-full sm:w-auto">
                         <select id="statusFilter" onchange="filterTable()" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none cursor-pointer">
                             <option value="">Semua Status</option>
-                            <option value="Yatim">Yatim</option>
-                            <option value="Piatu">Piatu</option>
-                            <option value="Yatim Piatu">Yatim Piatu</option>
-                            <option value="Dhuafa">Dhuafa</option>
+                            {{range .StatusList}}
+                            <option value="{{.}}">{{.}}</option>
+                            {{end}}
                         </select>
-                        <select id="wilayahFilter" onchange="filterTable()" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none cursor-pointer">
-                            <option value="">Semua Wilayah</option>
-                            <option value="RW 01">RW 01</option>
-                            <option value="RW 02">RW 02</option>
+                        <select id="rtFilter" onchange="filterTable()" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none cursor-pointer">
+                            <option value="">Semua RT</option>
+                            {{range .RTList}}
+                            <option value="{{.}}">RT {{.}}</option>
+                            {{end}}
+                        </select>
+                        <select id="rwFilter" onchange="filterTable()" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block w-full p-2.5 outline-none cursor-pointer">
+                            <option value="">Semua RW</option>
+                            {{range .RWList}}
+                            <option value="{{.}}">RW {{.}}</option>
+                            {{end}}
                         </select>
                     </div>
                 </div>
@@ -174,12 +220,16 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100" id="tableBody">
                             {{range .AnakAsuh}}
-                            <tr class="hover:bg-gray-50/50 transition-colors group" data-status="{{.Status}}" data-wilayah="{{.Wilayah}}">
+                            <tr class="hover:bg-gray-50/50 transition-colors group" data-status="{{.Status}}" data-rt="{{.RT}}" data-rw="{{.RW}}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="h-10 w-10 flex-shrink-0">
-                                            <div class="h-10 w-10 rounded-full {{.AvatarBg}} {{.AvatarText}} flex items-center justify-center font-bold text-sm">
+                                            <div class="h-10 w-10 rounded-full {{.AvatarBg}} {{.AvatarText}} flex items-center justify-center font-bold text-sm overflow-hidden">
+                                                {{if .FotoProfilURL}}
+                                                <img src="{{.FotoProfilURL}}" alt="{{.NamaLengkap}}" class="w-full h-full object-cover">
+                                                {{else}}
                                                 {{.Initials}}
+                                                {{end}}
                                             </div>
                                         </div>
                                         <div class="ml-4">
@@ -269,6 +319,64 @@
         </div>
     </div>
 
+    <!-- Import Modal -->
+    <div id="importModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm" onclick="closeImportModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 relative z-10">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Import Data Anak Asuh</h3>
+                <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                    <div class="text-sm text-blue-800">
+                        <p class="font-medium mb-1">Petunjuk Import:</p>
+                        <ul class="list-disc list-inside space-y-1 text-xs">
+                            <li>Download template terlebih dahulu</li>
+                            <li>Isi data sesuai format yang ada</li>
+                            <li>Upload file Excel (.xlsx) atau CSV (.csv)</li>
+                            <li>Maksimal ukuran file 10MB</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <form id="importForm" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File</label>
+                    <div class="relative">
+                        <input type="file" id="importFile" name="file" accept=".xlsx,.xls,.csv"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary_dark cursor-pointer border border-gray-300 rounded-lg">
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">Format: .xlsx, .xls, atau .csv (Maks. 10MB)</p>
+                </div>
+
+                <div id="importProgress" class="hidden mb-4">
+                    <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                        <i class="fas fa-spinner fa-spin text-primary"></i>
+                        <span>Sedang mengimport data...</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%" id="progressBar"></div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeImportModal()" class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex-1 bg-primary text-white py-2.5 rounded-lg font-medium hover:bg-primary_dark transition-colors">
+                        <i class="fas fa-upload mr-2"></i>Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -280,19 +388,22 @@
         function filterTable() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const status = document.getElementById('statusFilter').value;
-            const wilayah = document.getElementById('wilayahFilter').value;
+            const rt = document.getElementById('rtFilter').value;
+            const rw = document.getElementById('rwFilter').value;
             const rows = document.querySelectorAll('#tableBody tr');
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 const rowStatus = row.dataset.status || '';
-                const rowWilayah = row.dataset.wilayah || '';
+                const rowRT = row.dataset.rt || '';
+                const rowRW = row.dataset.rw || '';
                 
                 const matchSearch = text.includes(search);
                 const matchStatus = !status || rowStatus === status;
-                const matchWilayah = !wilayah || rowWilayah.includes(wilayah);
+                const matchRT = !rt || rowRT === rt;
+                const matchRW = !rw || rowRW === rw;
                 
-                row.style.display = matchSearch && matchStatus && matchWilayah ? '' : 'none';
+                row.style.display = matchSearch && matchStatus && matchRT && matchRW ? '' : 'none';
             });
         }
 
@@ -346,6 +457,142 @@
             }
             closeDeleteModal();
         }
+
+        // Export dropdown functions
+        function toggleExportMenu() {
+            const menu = document.getElementById('exportMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close export menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('exportDropdown');
+            const menu = document.getElementById('exportMenu');
+            if (dropdown && !dropdown.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // Import modal functions
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+            document.getElementById('exportMenu').classList.add('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+            document.getElementById('importForm').reset();
+            document.getElementById('importProgress').classList.add('hidden');
+        }
+
+        // Handle import form submission
+        document.getElementById('importForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'File Belum Dipilih',
+                    text: 'Silakan pilih file yang akan diimport',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['.xlsx', '.xls', '.csv'];
+            const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            if (!validTypes.includes(fileExt)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Format File Tidak Valid',
+                    text: 'Hanya file Excel (.xlsx, .xls) atau CSV (.csv) yang diperbolehkan',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Terlalu Besar',
+                    text: 'Ukuran file maksimal 10MB',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+
+            // Show progress
+            document.getElementById('importProgress').classList.remove('hidden');
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = '30%';
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Upload file
+            fetch('/admin/anak-asuh/import', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                progressBar.style.width = '100%';
+                
+                setTimeout(() => {
+                    closeImportModal();
+                    
+                    if (data.success) {
+                        let message = data.message;
+                        if (data.stats && data.stats.errors && data.stats.errors.length > 0) {
+                            message += '\n\nError detail:\n' + data.stats.errors.slice(0, 5).join('\n');
+                            if (data.stats.errors.length > 5) {
+                                message += '\n... dan ' + (data.stats.errors.length - 5) + ' error lainnya';
+                            }
+                        }
+                        
+                        Swal.fire({
+                            icon: data.stats && data.stats.error_count > 0 ? 'warning' : 'success',
+                            title: 'Import Selesai',
+                            html: message.replace(/\n/g, '<br>'),
+                            confirmButtonColor: '#10b981'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        let errorMessage = data.message;
+                        if (data.stats && data.stats.errors) {
+                            errorMessage += '<br><br>Error detail:<br>' + data.stats.errors.slice(0, 5).join('<br>');
+                            if (data.stats.errors.length > 5) {
+                                errorMessage += '<br>... dan ' + (data.stats.errors.length - 5) + ' error lainnya';
+                            }
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Import Gagal',
+                            html: errorMessage,
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                }, 500);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                closeImportModal();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Terjadi Kesalahan',
+                    text: 'Tidak dapat menghubungi server',
+                    confirmButtonColor: '#ef4444'
+                });
+            });
+        });
 
         {{if .Flash}}
         document.addEventListener('DOMContentLoaded', function() {

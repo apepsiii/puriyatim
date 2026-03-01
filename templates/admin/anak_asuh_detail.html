@@ -62,6 +62,9 @@
             <a href="/admin/artikel" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-newspaper w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
             </a>
@@ -139,8 +142,12 @@
                         <div class="px-6 pb-6 relative">
                             <div class="flex justify-center -mt-12 mb-4">
                                 <div class="w-24 h-24 rounded-full bg-white p-1 shadow-md">
-                                    <div class="w-full h-full rounded-full {{.AnakAsuh.AvatarBg}} {{.AnakAsuh.AvatarText}} flex items-center justify-center font-bold text-3xl border-2 border-white">
+                                    <div class="w-full h-full rounded-full {{.AnakAsuh.AvatarBg}} {{.AnakAsuh.AvatarText}} flex items-center justify-center font-bold text-3xl border-2 border-white overflow-hidden">
+                                        {{if .AnakAsuh.FotoProfilURL}}
+                                        <img src="{{.AnakAsuh.FotoProfilURL}}" alt="{{.AnakAsuh.NamaLengkap}}" class="w-full h-full object-cover">
+                                        {{else}}
                                         {{.AnakAsuh.Initials}}
+                                        {{end}}
                                     </div>
                                 </div>
                             </div>

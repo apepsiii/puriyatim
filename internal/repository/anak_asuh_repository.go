@@ -361,3 +361,81 @@ func (r *AnakAsuhRepository) CountAll() (int, error) {
 
 	return count, nil
 }
+
+// GetUniqueStatusAnak returns all unique status anak values from database
+func (r *AnakAsuhRepository) GetUniqueStatusAnak() ([]string, error) {
+	query := `SELECT DISTINCT status_anak FROM ANAK_ASUH WHERE status_anak IS NOT NULL AND status_anak != '' ORDER BY status_anak`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query unique status anak: %w", err)
+	}
+	defer rows.Close()
+
+	var statusList []string
+	for rows.Next() {
+		var status string
+		if err := rows.Scan(&status); err != nil {
+			return nil, fmt.Errorf("failed to scan status anak: %w", err)
+		}
+		statusList = append(statusList, status)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating status anak rows: %w", err)
+	}
+
+	return statusList, nil
+}
+
+// GetUniqueRT returns all unique RT values from database
+func (r *AnakAsuhRepository) GetUniqueRT() ([]string, error) {
+	query := `SELECT DISTINCT rt FROM ANAK_ASUH WHERE rt IS NOT NULL AND rt != '' ORDER BY rt`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query unique RT: %w", err)
+	}
+	defer rows.Close()
+
+	var rtList []string
+	for rows.Next() {
+		var rt string
+		if err := rows.Scan(&rt); err != nil {
+			return nil, fmt.Errorf("failed to scan RT: %w", err)
+		}
+		rtList = append(rtList, rt)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating RT rows: %w", err)
+	}
+
+	return rtList, nil
+}
+
+// GetUniqueRW returns all unique RW values from database
+func (r *AnakAsuhRepository) GetUniqueRW() ([]string, error) {
+	query := `SELECT DISTINCT rw FROM ANAK_ASUH WHERE rw IS NOT NULL AND rw != '' ORDER BY rw`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query unique RW: %w", err)
+	}
+	defer rows.Close()
+
+	var rwList []string
+	for rows.Next() {
+		var rw string
+		if err := rows.Scan(&rw); err != nil {
+			return nil, fmt.Errorf("failed to scan RW: %w", err)
+		}
+		rwList = append(rwList, rw)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating RW rows: %w", err)
+	}
+
+	return rwList, nil
+}

@@ -50,3 +50,15 @@ func (s *AnakAsuhService) GetByRT(rt string) ([]*models.AnakAsuh, error) {
 func (s *AnakAsuhService) GetByRTRW(rt, rw string) ([]*models.AnakAsuh, error) {
 	return s.repo.GetByRTRW(rt, rw)
 }
+
+func (s *AnakAsuhService) GetUniqueStatusAnak() ([]string, error) {
+	return s.repo.GetUniqueStatusAnak()
+}
+
+func (s *AnakAsuhService) GetUniqueRT() ([]string, error) {
+	return s.repo.GetUniqueRT()
+}
+
+func (s *AnakAsuhService) GetUniqueRW() ([]string, error) {
+	return s.repo.GetUniqueRW()
+}

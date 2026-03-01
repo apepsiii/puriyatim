@@ -26,6 +26,9 @@ func (s *KeuanganService) CreatePemasukan(p *models.PemasukanDonasi) error {
 	if p.NamaDonatur == "" {
 		p.NamaDonatur = "Hamba Allah"
 	}
+	if p.StatusVerifikasi == "" {
+		p.StatusVerifikasi = models.StatusVerifikasiPending
+	}
 	return s.repo.CreatePemasukan(p)
 }
 
@@ -151,6 +154,7 @@ func (s *KeuanganService) GetBukuKas() ([]models.KasTransaction, error) {
 			Jumlah:    p.Nominal,
 			Type:      "masuk",
 			Donatur:   p.NamaDonatur,
+			Status:    p.StatusVerifikasi,
 		})
 	}
 
@@ -198,8 +202,11 @@ func (s *KeuanganService) GetBukuKasFiltered(month, transType string) ([]models.
 				Jumlah:    p.Nominal,
 				Type:      "masuk",
 				Donatur:   p.NamaDonatur,
+				Status:    p.StatusVerifikasi,
 			})
-			totalPemasukan += p.Nominal
+			if p.StatusVerifikasi == models.StatusVerifikasiVerified {
+				totalPemasukan += p.Nominal
+			}
 		}
 	}
 
@@ -278,6 +285,14 @@ func (s *KeuanganService) UpdatePemasukan(p *models.PemasukanDonasi) error {
 	if p.NamaDonatur == "" {
 		p.NamaDonatur = "Hamba Allah"
 	}
+	if p.StatusVerifikasi == "" {
+		existing, err := s.repo.GetPemasukanByID(p.ID)
+		if err == nil {
+			p.StatusVerifikasi = existing.StatusVerifikasi
+		} else {
+			p.StatusVerifikasi = models.StatusVerifikasiPending
+		}
+	}
 	return s.repo.UpdatePemasukan(p)
 }
 
@@ -296,6 +311,14 @@ func (s *KeuanganService) UpdatePengeluaran(p *models.Pengeluaran) error {
 
 func (s *KeuanganService) GetPengeluaranByAnakID(anakID string) ([]*models.Pengeluaran, error) {
 	return s.repo.GetPengeluaranByAnakID(anakID)
+}
+
+func (s *KeuanganService) VerifyPemasukan(id string) error {
+	return s.repo.VerifyPemasukan(id)
+}
+
+func (s *KeuanganService) GetPemasukanByNomorHP(nomorHP string) ([]*models.PemasukanDonasi, error) {
+	return s.repo.GetPemasukanByNomorHP(nomorHP)
 }
 
 var ErrInvalidNominal = &ValidationError{Message: "Nominal harus lebih dari 0"}

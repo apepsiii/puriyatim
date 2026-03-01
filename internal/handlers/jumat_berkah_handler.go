@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"puriyatim-app/internal/models"
 	"puriyatim-app/internal/services"
@@ -31,6 +32,7 @@ type JumatBerkahListData struct {
 	CurrentPeriod  string
 	FormOpen       bool
 	Registrations  []JumatBerkahRegItem
+	ManualCandidates []ManualCandidateItem
 	Flash          *FlashMessage
 	StatusFilter   string
 }
@@ -48,6 +50,16 @@ type JumatBerkahRegItem struct {
 	Initials    string
 	AvatarBg    string
 	AvatarText  string
+}
+
+type ManualCandidateItem struct {
+	ID            string
+	NamaLengkap   string
+	NamaPanggilan string
+	Jenjang       string
+	StatusAnak    string
+	Wilayah       string
+	AlreadyReg    bool
 }
 
 func (h *JumatBerkahHandler) List(c echo.Context) error {
@@ -125,6 +137,24 @@ func (h *JumatBerkahHandler) List(c echo.Context) error {
 		})
 	}
 
+	candidates, _ := h.service.GetManualRegistrationCandidates()
+	manualCandidates := make([]ManualCandidateItem, 0, len(candidates))
+	for _, c := range candidates {
+		wilayah := "-"
+		if c.RT != "" || c.RW != "" {
+			wilayah = fmt.Sprintf("RT %s / RW %s", c.RT, c.RW)
+		}
+		manualCandidates = append(manualCandidates, ManualCandidateItem{
+			ID:            c.ID,
+			NamaLengkap:   c.NamaLengkap,
+			NamaPanggilan: c.NamaPanggilan,
+			Jenjang:       c.Jenjang,
+			StatusAnak:    c.StatusAnak,
+			Wilayah:       wilayah,
+			AlreadyReg:    c.AlreadyReg,
+		})
+	}
+
 	quota := 20
 	quotaFilled := 0
 	remaining := 0
@@ -152,6 +182,7 @@ func (h *JumatBerkahHandler) List(c echo.Context) error {
 		CurrentPeriod:  currentPeriod,
 		FormOpen:       formOpen,
 		Registrations:  regItems,
+		ManualCandidates: manualCandidates,
 		Flash:          flash,
 		StatusFilter:   statusFilter,
 	}
@@ -281,6 +312,54 @@ func (h *JumatBerkahHandler) ToggleForm(c echo.Context) error {
 	})
 }
 
+func (h *JumatBerkahHandler) ManualRegister(c echo.Context) error {
+	ids := c.FormValue("anak_ids")
+	autoApprove := c.FormValue("auto_approve") == "true"
+	catatan := strings.TrimSpace(c.FormValue("catatan"))
+
+	idList := splitIDs(ids)
+	if len(idList) == 0 {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "Pilih minimal satu anak asuh",
+		})
+	}
+
+	count := 0
+	var errors []string
+	for _, id := range idList {
+		if _, err := h.service.CreateManualRegistration(id, autoApprove, catatan); err != nil {
+			errors = append(errors, fmt.Sprintf("%s: %s", id, err.Error()))
+			continue
+		}
+		count++
+	}
+
+	if count == 0 {
+		message := "Tidak ada pendaftaran manual yang berhasil diproses"
+		if len(errors) > 0 {
+			message = errors[0]
+		}
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": message,
+			"errors":  errors,
+		})
+	}
+
+	actionText := "berhasil didaftarkan manual"
+	if autoApprove {
+		actionText = "berhasil didaftarkan manual dan langsung disetujui"
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": strconv.Itoa(count) + " anak asuh " + actionText,
+		"count":   count,
+		"errors":  errors,
+	})
+}
+
 func getAvatarStyle(name string) (bg, text string) {
 	colors := []struct{ bg, text string }{
 		{"bg-emerald-100", "text-emerald-600"},
@@ -304,7 +383,7 @@ func splitIDs(s string) []string {
 	for _, r := range s {
 		if r == ',' {
 			if current != "" {
-				ids = append(ids, current)
+				ids = append(ids, strings.TrimSpace(current))
 				current = ""
 			}
 		} else {
@@ -312,7 +391,7 @@ func splitIDs(s string) []string {
 		}
 	}
 	if current != "" {
-		ids = append(ids, current)
+		ids = append(ids, strings.TrimSpace(current))
 	}
 	return ids
 }

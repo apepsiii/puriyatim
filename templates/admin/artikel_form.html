@@ -58,6 +58,9 @@
             <a href="/admin/artikel" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium">
                 <i class="fas fa-newspaper w-5 mr-3 text-primary"></i> Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
             </a>
@@ -92,6 +95,9 @@
                             <div class="flex items-center">
                                 <i class="fas fa-chevron-right text-xs text-gray-400 mx-1"></i>
                                 <a href="/admin/artikel" class="ml-1 hover:text-gray-900 font-medium">Artikel & Kegiatan</a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
                             </div>
                         </li>
                         <li>
@@ -112,6 +118,9 @@
                     <a href="/admin/artikel" class="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors bg-white">
                         <i class="fas fa-arrow-left"></i>
                     </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800 tracking-tight">{{if .IsEdit}}Edit Artikel{{else}}Tulis Artikel Baru{{end}}</h2>
                         <p class="text-sm text-gray-500 mt-1">{{if .IsEdit}}Perbarui konten artikel yang sudah ada.{{else}}Buat konten menarik untuk pengunjung website Anda.{{end}}</p>
@@ -142,10 +151,10 @@
                         
                         <div class="bg-gray-50 border-b border-gray-200 p-2 flex flex-wrap items-center gap-1">
                             <div class="flex items-center border-r border-gray-300 pr-2 mr-1">
-                                <select class="bg-transparent text-sm text-gray-700 outline-none cursor-pointer py-1 px-2 hover:bg-gray-200 rounded">
-                                    <option>Paragraph</option>
-                                    <option>Heading 2</option>
-                                    <option>Heading 3</option>
+                                <select id="block-format" onchange="applyBlockFormat(this.value)" class="bg-transparent text-sm text-gray-700 outline-none cursor-pointer py-1 px-2 hover:bg-gray-200 rounded">
+                                    <option value="P">Paragraph</option>
+                                    <option value="H2">Heading 2</option>
+                                    <option value="H3">Heading 3</option>
                                 </select>
                             </div>
                             <div class="flex items-center border-r border-gray-300 pr-2 mr-1 gap-1">
@@ -163,7 +172,8 @@
                             </div>
                         </div>
 
-                        <textarea name="konten" id="editor" class="flex-1 w-full p-6 bg-white text-gray-800 text-base leading-relaxed outline-none resize-none placeholder-gray-300" placeholder="Mulai menulis cerita Anda di sini...">{{if .Artikel}}{{.Artikel.KontenHTML}}{{end}}</textarea>
+                        <div id="editor" contenteditable="true" class="flex-1 w-full p-6 bg-white text-gray-800 text-base leading-relaxed outline-none overflow-y-auto" data-placeholder="Mulai menulis cerita Anda di sini...">{{if .Artikel}}{{.Artikel.KontenHTML | safe}}{{end}}</div>
+                        <textarea name="konten" id="input_konten" class="hidden"></textarea>
                     </div>
 
                 </div>
@@ -214,7 +224,7 @@
                             </div>
                             <input id="thumbnail-upload" type="file" name="gambar_thumbnail" class="hidden" accept="image/png, image/jpeg, image/jpg" onchange="previewImage(this)" />
                             
-                            <img id="image-preview" class="{{if not .Artikel}}hidden{{else}}{{if not .Artikel.GambarThumbnail}}hidden{{end}}{{end}} absolute inset-0 w-full h-full object-cover" {{if .Artikel}}{{if .Artikel.GambarThumbnail}}src="{{.Artikel.GambarThumbnail}}"{{end}}{{end}} alt="Preview">
+                            <img id="image-preview" class="{{if not .Artikel}}hidden{{else}}{{if not .Artikel.GambarThumbnail}}hidden{{end}}{{end}} absolute inset-0 w-full h-full object-cover" {{if .Artikel}}{{if .Artikel.GambarThumbnail}}src="{{.Artikel.GambarThumbnail | safeImageURL}}"{{end}}{{end}} alt="Preview">
                         </label>
                         <div id="remove-image-btn" class="{{if not .Artikel}}hidden{{else}}{{if not .Artikel.GambarThumbnail}}hidden{{end}}{{end}} mt-2 text-center">
                             <button type="button" class="text-xs text-red-500 font-medium hover:underline" onclick="removeImage()">Hapus Gambar</button>
@@ -318,8 +328,14 @@
             document.getElementById('artikelForm').submit();
         }
 
+        function applyBlockFormat(tagName) {
+            if (!tagName) return;
+            formatText('formatBlock', tagName);
+        }
+
         function formatText(command, value) {
-            document.getElementById('editor').focus();
+            const editor = document.getElementById('editor');
+            editor.focus();
             document.execCommand(command, false, value || null);
         }
 
@@ -332,7 +348,17 @@
         }
 
         document.getElementById('artikelForm').addEventListener('submit', function() {
+            const editor = document.getElementById('editor');
+            const hiddenKonten = document.getElementById('input_konten');
+            hiddenKonten.value = editor.innerHTML.trim();
             document.getElementById('loading-overlay').classList.remove('hidden');
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const editor = document.getElementById('editor');
+            if (!editor.innerHTML.trim()) {
+                editor.innerHTML = '<p><br></p>';
+            }
         });
     </script>
 </body>

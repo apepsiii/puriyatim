@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS PENGATURAN_WEB (
     alamat_lengkap TEXT,
     link_instagram TEXT,
     link_youtube TEXT,
+    overlay_galeri_url TEXT,
+    rekening_bsi TEXT,
+    rekening_mandiri TEXT,
+    nama_pemilik_rekening TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -123,6 +127,8 @@ CREATE TABLE IF NOT EXISTS PEMASUKAN_DONASI (
     nominal REAL NOT NULL,
     kategori_dana TEXT NOT NULL CHECK (kategori_dana IN ('Infaq', 'Sedekah', 'Wakaf', 'Zakat', 'Lainnya')),
     catatan TEXT,
+    bukti_transaksi TEXT,
+    status_verifikasi TEXT NOT NULL DEFAULT 'verified' CHECK (status_verifikasi IN ('pending', 'verified')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -137,6 +143,17 @@ CREATE TABLE IF NOT EXISTS PENGELUARAN (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_anak) REFERENCES ANAK_ASUH(id_anak) ON DELETE SET NULL
+);
+
+-- Create GALERI_FOTO table
+CREATE TABLE IF NOT EXISTS GALERI_FOTO (
+    id_foto TEXT PRIMARY KEY,
+    judul TEXT NOT NULL,
+    deskripsi TEXT,
+    gambar_asli_url TEXT NOT NULL,
+    gambar_overlay_url TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create KEGIATAN_JUMAT_BERKAH table
@@ -174,6 +191,7 @@ CREATE INDEX IF NOT EXISTS idx_pengeluaran_tanggal ON PENGELUARAN(tanggal_pengel
 CREATE INDEX IF NOT EXISTS idx_kegiatan_tanggal ON KEGIATAN_JUMAT_BERKAH(tanggal_kegiatan);
 CREATE INDEX IF NOT EXISTS idx_pendaftaran_kegiatan ON PENDAFTAR_JUMAT_BERKAH(id_kegiatan);
 CREATE INDEX IF NOT EXISTS idx_pendaftaran_status ON PENDAFTAR_JUMAT_BERKAH(status_approval);
+CREATE INDEX IF NOT EXISTS idx_galeri_created ON GALERI_FOTO(created_at);
 
 -- Create triggers for updated_at timestamps
 CREATE TRIGGER IF NOT EXISTS update_pengurus_updated_at

@@ -1,10 +1,14 @@
 package services
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"puriyatim-app/internal/models"
 	"puriyatim-app/internal/repository"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -34,38 +38,29 @@ type Claims struct {
 }
 
 func NewAuthService(pengurusRepo *repository.PengurusRepository, jwtSecret string) *AuthService {
-	if jwtSecret == "" {
-		jwtSecret = "default_secret_key"
+	secret := strings.TrimSpace(jwtSecret)
+	if secret == "" || secret == "default_secret_key" {
+		secret = generateRuntimeSecret()
+		log.Printf("warning: JWT secret default/kosong, menggunakan secret runtime sementara")
 	}
 	return &AuthService{
 		pengurusRepo: pengurusRepo,
-		jwtSecret:    jwtSecret,
+		jwtSecret:    secret,
 	}
 }
 
 func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	if s.pengurusRepo == nil {
-		if req.Email == "admin@puriyatim.org" && req.Password == "admin123" {
-			pengurus := &models.Pengurus{
-				ID:          "1",
-				NamaLengkap: "Budi Admin",
-				Email:       "admin@puriyatim.org",
-				Peran:       models.PeranSuperadmin,
-				Status:      models.StatusPengurusAktif,
-			}
-			token, err := s.generateToken(pengurus)
-			if err != nil {
-				return nil, fmt.Errorf("failed to generate token: %w", err)
-			}
-			return &LoginResponse{
-				Token:    token,
-				Pengurus: pengurus,
-			}, nil
-		}
+		return nil, errors.New("layanan autentikasi belum tersedia")
+	}
+
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	password := strings.TrimSpace(req.Password)
+	if email == "" || password == "" {
 		return nil, errors.New("email atau password salah")
 	}
 
-	pengurus, err := s.pengurusRepo.GetByEmail(req.Email)
+	pengurus, err := s.pengurusRepo.GetByEmail(email)
 	if err != nil {
 		return nil, errors.New("email atau password salah")
 	}
@@ -99,8 +94,10 @@ func (s *AuthService) generateToken(pengurus *models.Pengurus) (string, error) {
 		Email: pengurus.Email,
 		Peran: pengurus.Peran,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(8 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-1 * time.Minute).UTC()),
+			Issuer:    "puri-yatim-admin",
 		},
 	}
 
@@ -119,6 +116,9 @@ func (s *AuthService) generateToken(pengurus *models.Pengurus) (string, error) {
 func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	// Parse token
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if token.Method != jwt.SigningMethodHS256 {
+			return nil, errors.New("invalid signing method")
+		}
 		return []byte(s.jwtSecret), nil
 	})
 
@@ -128,10 +128,21 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 
 	// Validate token
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		if claims.Issuer != "puri-yatim-admin" {
+			return nil, errors.New("invalid issuer")
+		}
 		return claims, nil
 	}
 
 	return nil, errors.New("invalid token")
+}
+
+func generateRuntimeSecret() string {
+	random := make([]byte, 32)
+	if _, err := rand.Read(random); err != nil {
+		return fmt.Sprintf("fallback-%d", time.Now().UnixNano())
+	}
+	return base64.RawURLEncoding.EncodeToString(random)
 }
 
 func (s *AuthService) HashPassword(password string) (string, error) {

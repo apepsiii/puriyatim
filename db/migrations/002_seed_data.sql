@@ -213,31 +213,34 @@ INSERT OR IGNORE INTO ARTIKEL (
 
 -- Insert sample pemasukan donasi
 INSERT OR IGNORE INTO PEMASUKAN_DONASI (
-    id_pemasukan, id_donatur, tanggal_donasi, nominal, kategori_dana, catatan
+    id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, status_verifikasi
 ) VALUES 
 (
     'pemasukan-001',
-    'donatur-001',
+    'H. Ahmad Wijaya',
     date('now', '-30 days'),
     1000000,
     'Infaq',
-    'Donasi rutin bulanan'
+    'Donasi rutin bulanan',
+    'verified'
 ),
 (
     'pemasukan-002',
-    'donatur-002',
+    'PT. Sejahtera Bersama',
     date('now', '-15 days'),
     5000000,
     'Sedekah',
-    'Program CSR perusahaan'
+    'Program CSR perusahaan',
+    'verified'
 ),
 (
     'pemasukan-003',
-    'donatur-003',
+    'Komunitas Peduli',
     date('now', '-7 days'),
     2500000,
     'Zakat',
-    'Donasi komunitas'
+    'Donasi komunitas',
+    'verified'
 );
 
 -- Insert sample pengeluaran

@@ -50,7 +50,7 @@
         <div class="w-full h-72 bg-gray-200 relative">
             {{if .Artikel}}
             {{if .Artikel.GambarThumbnail}}
-            <img src="{{.Artikel.GambarThumbnail}}" alt="{{.Artikel.Judul}}" class="w-full h-full object-cover relative z-10">
+            <img src="{{.Artikel.GambarThumbnail | safeImageURL}}" alt="{{.Artikel.Judul}}" class="w-full h-full object-cover relative z-10">
             {{else}}
             <div class="absolute inset-0 flex items-center justify-center text-gray-400 bg-emerald-50">
                 <i class="fas fa-images text-5xl opacity-50"></i>

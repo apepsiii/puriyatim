@@ -2,13 +2,18 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"puriyatim-app/internal/models"
 	"puriyatim-app/internal/services"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -16,29 +21,34 @@ type AnakAsuhHandler struct {
 	service            *services.AnakAsuhService
 	keuanganService    *services.KeuanganService
 	jumatBerkahService *services.JumatBerkahService
+	exportImportService *services.ExportImportService
 }
 
-func NewAnakAsuhHandler(service *services.AnakAsuhService, keuanganService *services.KeuanganService, jumatBerkahService *services.JumatBerkahService) *AnakAsuhHandler {
+func NewAnakAsuhHandler(service *services.AnakAsuhService, keuanganService *services.KeuanganService, jumatBerkahService *services.JumatBerkahService, exportImportService *services.ExportImportService) *AnakAsuhHandler {
 	return &AnakAsuhHandler{
 		service:            service,
 		keuanganService:    keuanganService,
 		jumatBerkahService: jumatBerkahService,
+		exportImportService: exportImportService,
 	}
 }
 
 type AnakAsuhListData struct {
-	Title       string
-	AnakAsuh    []AnakAsuhItem
-	TotalCount  int
-	StartIndex  int
-	EndIndex    int
-	CurrentPage int
-	Pages       []int
-	HasPrev     bool
-	HasNext     bool
-	PrevPage    int
-	NextPage    int
-	Flash       *FlashMessage
+	Title        string
+	AnakAsuh     []AnakAsuhItem
+	TotalCount   int
+	StartIndex   int
+	EndIndex     int
+	CurrentPage  int
+	Pages        []int
+	HasPrev      bool
+	HasNext      bool
+	PrevPage     int
+	NextPage     int
+	Flash        *FlashMessage
+	StatusList   []string
+	RTList       []string
+	RWList       []string
 }
 
 type AnakAsuhItem struct {
@@ -46,6 +56,7 @@ type AnakAsuhItem struct {
 	NamaLengkap   string
 	NamaPanggilan string
 	Initials      string
+	FotoProfilURL *string
 	Domisili      string
 	Kelurahan     string
 	NamaSekolah   string
@@ -59,6 +70,8 @@ type AnakAsuhItem struct {
 	AvatarText    string
 	Wilayah       string
 	Jenjang       string
+	RT            string
+	RW            string
 }
 
 type AnakAsuhDetailData struct {
@@ -110,6 +123,7 @@ type AnakAsuhDetailItem struct {
 	NamaWali              string
 	HubunganWali          string
 	KontakWali            string
+	FotoProfilURL         *string
 	Usia                  int
 	StatusAktif           string
 }
@@ -153,12 +167,14 @@ func (h *AnakAsuhHandler) List(c echo.Context) error {
 	for _, item := range allData {
 		bg, text, border, dot := item.GetStatusStyle()
 		avatarBg, avatarText := item.GetAvatarStyle()
+		fotoProfilURL := normalizeFotoProfilURLPtr(item.FotoProfilURL)
 
 		anakAsuhList = append(anakAsuhList, AnakAsuhItem{
 			ID:            item.ID,
 			NamaLengkap:   item.NamaLengkap,
 			NamaPanggilan: item.NamaPanggilan,
 			Initials:      item.GetInitials(),
+			FotoProfilURL: fotoProfilURL,
 			Domisili:      item.GetDomisili(),
 			Kelurahan:     item.DesaKelurahan,
 			NamaSekolah:   item.NamaSekolah,
@@ -172,8 +188,15 @@ func (h *AnakAsuhHandler) List(c echo.Context) error {
 			AvatarText:    avatarText,
 			Wilayah:       item.GetWilayah(),
 			Jenjang:       item.JenjangPendidikan,
+			RT:            item.RT,
+			RW:            item.RW,
 		})
 	}
+
+	// Get filter options from database
+	statusList, _ := h.service.GetUniqueStatusAnak()
+	rtList, _ := h.service.GetUniqueRT()
+	rwList, _ := h.service.GetUniqueRW()
 
 	data := AnakAsuhListData{
 		Title:       "Data Anak Asuh",
@@ -186,6 +209,9 @@ func (h *AnakAsuhHandler) List(c echo.Context) error {
 		HasPrev:     false,
 		HasNext:     false,
 		Flash:       flash,
+		StatusList:  statusList,
+		RTList:      rtList,
+		RWList:      rwList,
 	}
 
 	return c.Render(http.StatusOK, "admin/anak_asuh_list.html", data)
@@ -252,6 +278,7 @@ func (h *AnakAsuhHandler) Detail(c echo.Context) error {
 		NamaWali:              item.NamaWali,
 		HubunganWali:          item.HubunganWali,
 		KontakWali:            item.KontakWali,
+		FotoProfilURL:         normalizeFotoProfilURLPtr(item.FotoProfilURL),
 		Usia:                  usia,
 		StatusAktif:           string(item.StatusAktif),
 	}
@@ -367,6 +394,7 @@ func (h *AnakAsuhHandler) EditForm(c echo.Context) error {
 		NamaWali:          item.NamaWali,
 		HubunganWali:      item.HubunganWali,
 		KontakWali:        item.KontakWali,
+		FotoProfilURL:     normalizeFotoProfilURLPtr(item.FotoProfilURL),
 		StatusAktif:       string(item.StatusAktif),
 	}
 
@@ -379,9 +407,71 @@ func (h *AnakAsuhHandler) EditForm(c echo.Context) error {
 	return c.Render(http.StatusOK, "admin/anak_asuh_form.html", data)
 }
 
+// handleFileUpload processes the uploaded photo file and returns the file URL
+func (h *AnakAsuhHandler) handleFileUpload(c echo.Context) (string, error) {
+	file, err := c.FormFile("foto_profil")
+	if err != nil {
+		// No file uploaded, return empty string (not an error)
+		if err == http.ErrMissingFile {
+			return "", nil
+		}
+		return "", err
+	}
+
+	// Validate file size (2MB max)
+	if file.Size > 2*1024*1024 {
+		return "", fmt.Errorf("ukuran file terlalu besar, maksimal 2MB")
+	}
+
+	// Validate file type
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		return "", fmt.Errorf("format file tidak didukung, gunakan JPG atau PNG")
+	}
+
+	// Open uploaded file
+	src, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer src.Close()
+
+	// Generate unique filename
+	filename := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+	uploadPath := filepath.Join("static", "uploads", filename)
+
+	// Create uploads directory if not exists
+	uploadsDir := filepath.Join("static", "uploads")
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		return "", err
+	}
+
+	// Create destination file
+	dst, err := os.Create(uploadPath)
+	if err != nil {
+		return "", err
+	}
+	defer dst.Close()
+
+	// Copy file content
+	if _, err = io.Copy(dst, src); err != nil {
+		return "", err
+	}
+
+	// Return URL path served by Echo static handler.
+	return "/static/uploads/" + filename, nil
+}
+
 func (h *AnakAsuhHandler) Create(c echo.Context) error {
 	tanggalLahir, _ := time.Parse("2006-01-02", c.FormValue("tanggal_lahir"))
 	tanggalMasuk, _ := time.Parse("2006-01-02", c.FormValue("tanggal_masuk"))
+
+	// Handle file upload
+	fotoProfilURL, err := h.handleFileUpload(c)
+	if err != nil {
+		setFlash(c, "error", "Gagal Upload Foto", err.Error())
+		return c.Redirect(http.StatusFound, "/admin/anak-asuh/tambah")
+	}
 
 	anakAsuh := &models.AnakAsuh{
 		NamaLengkap:       c.FormValue("nama_lengkap"),
@@ -408,6 +498,12 @@ func (h *AnakAsuhHandler) Create(c echo.Context) error {
 		KontakWali:        c.FormValue("kontak_wali"),
 	}
 
+	// Set foto profil URL if uploaded
+	if fotoProfilURL != "" {
+		normalized := normalizeFotoProfilURL(fotoProfilURL)
+		anakAsuh.FotoProfilURL = &normalized
+	}
+
 	nik := c.FormValue("nik")
 	if nik != "" {
 		anakAsuh.NIK = &nik
@@ -418,7 +514,7 @@ func (h *AnakAsuhHandler) Create(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/admin/anak-asuh/tambah")
 	}
 
-	err := h.service.Create(anakAsuh)
+	err = h.service.Create(anakAsuh)
 	if err != nil {
 		setFlash(c, "error", "Gagal Menyimpan", "Terjadi kesalahan saat menyimpan data: "+err.Error())
 		return c.Redirect(http.StatusFound, "/admin/anak-asuh/tambah")
@@ -439,6 +535,13 @@ func (h *AnakAsuhHandler) Update(c echo.Context) error {
 
 	tanggalLahir, _ := time.Parse("2006-01-02", c.FormValue("tanggal_lahir"))
 	tanggalMasuk, _ := time.Parse("2006-01-02", c.FormValue("tanggal_masuk"))
+
+	// Handle file upload
+	fotoProfilURL, err := h.handleFileUpload(c)
+	if err != nil {
+		setFlash(c, "error", "Gagal Upload Foto", err.Error())
+		return c.Redirect(http.StatusFound, "/admin/anak-asuh/"+id+"/edit")
+	}
 
 	anakAsuh := &models.AnakAsuh{
 		ID:                id,
@@ -465,6 +568,22 @@ func (h *AnakAsuhHandler) Update(c echo.Context) error {
 		HubunganWali:      c.FormValue("hubungan_wali"),
 		KontakWali:        c.FormValue("kontak_wali"),
 		CreatedAt:         existing.CreatedAt,
+	}
+
+	// Update foto profil URL if new file uploaded
+	if fotoProfilURL != "" {
+		// Delete old file if exists
+		if existing.FotoProfilURL != nil && *existing.FotoProfilURL != "" {
+			oldFilePath := fotoProfilFilePath(*existing.FotoProfilURL)
+			if oldFilePath != "" {
+				os.Remove(oldFilePath) // Ignore error if file doesn't exist
+			}
+		}
+		normalized := normalizeFotoProfilURL(fotoProfilURL)
+		anakAsuh.FotoProfilURL = &normalized
+	} else {
+		// Keep existing photo if no new upload
+		anakAsuh.FotoProfilURL = normalizeFotoProfilURLPtr(existing.FotoProfilURL)
 	}
 
 	nik := c.FormValue("nik")
@@ -518,6 +637,46 @@ func formatDate(t time.Time) string {
 		"Juli", "Agustus", "September", "Oktober", "November", "Desember",
 	}
 	return fmt.Sprintf("%d %s %d", t.Day(), months[t.Month()-1], t.Year())
+}
+
+func normalizeFotoProfilURLPtr(raw *string) *string {
+	if raw == nil || *raw == "" {
+		return nil
+	}
+	normalized := normalizeFotoProfilURL(*raw)
+	return &normalized
+}
+
+func normalizeFotoProfilURL(raw string) string {
+	url := strings.TrimSpace(raw)
+	if url == "" {
+		return ""
+	}
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		return url
+	}
+	if strings.HasPrefix(url, "/static/") {
+		return url
+	}
+	if strings.HasPrefix(url, "/uploads/") {
+		return "/static" + url
+	}
+	if strings.HasPrefix(url, "uploads/") {
+		return "/static/" + url
+	}
+	if strings.HasPrefix(url, "static/") {
+		return "/" + url
+	}
+	return url
+}
+
+func fotoProfilFilePath(url string) string {
+	normalized := normalizeFotoProfilURL(url)
+	if !strings.HasPrefix(normalized, "/static/") {
+		return ""
+	}
+	relativePath := strings.TrimPrefix(normalized, "/static/")
+	return filepath.Join("static", filepath.FromSlash(relativePath))
 }
 
 func setFlash(c echo.Context, flashType, title, message string) {
@@ -592,4 +751,115 @@ func getFlash(c echo.Context) *FlashMessage {
 		Title:   flashTitle.Value,
 		Message: flashMessage.Value,
 	}
+}
+
+// ExportExcel exports anak asuh data to Excel format
+func (h *AnakAsuhHandler) ExportExcel(c echo.Context) error {
+	file, err := h.exportImportService.ExportToExcel()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Gagal membuat file Excel: " + err.Error(),
+		})
+	}
+
+	filename := fmt.Sprintf("data_anak_asuh_%s.xlsx", time.Now().Format("20060102_150405"))
+	
+	c.Response().Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	
+	return file.Write(c.Response().Writer)
+}
+
+// ExportCSV exports anak asuh data to CSV format
+func (h *AnakAsuhHandler) ExportCSV(c echo.Context) error {
+	filename := fmt.Sprintf("data_anak_asuh_%s.csv", time.Now().Format("20060102_150405"))
+	
+	c.Response().Header().Set("Content-Type", "text/csv")
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	
+	err := h.exportImportService.ExportToCSV(c.Response().Writer)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Gagal membuat file CSV: " + err.Error(),
+		})
+	}
+	
+	return nil
+}
+
+// DownloadTemplate downloads import template
+func (h *AnakAsuhHandler) DownloadTemplate(c echo.Context) error {
+	file, err := h.exportImportService.GetImportTemplate()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Gagal membuat template: " + err.Error(),
+		})
+	}
+
+	filename := "template_import_anak_asuh.xlsx"
+	
+	c.Response().Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	
+	return file.Write(c.Response().Writer)
+}
+
+// ImportData imports anak asuh data from uploaded file
+func (h *AnakAsuhHandler) ImportData(c echo.Context) error {
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "File tidak ditemukan",
+		})
+	}
+
+	// Validate file
+	if err := h.exportImportService.ValidateImportFile(file); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	// Import based on file type
+	var successCount int
+	var errors []string
+
+	if strings.HasSuffix(strings.ToLower(file.Filename), ".csv") {
+		successCount, errors, err = h.exportImportService.ImportFromCSV(file)
+	} else {
+		successCount, errors, err = h.exportImportService.ImportFromExcel(file)
+	}
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Gagal mengimport data: " + err.Error(),
+		})
+	}
+
+	stats := h.exportImportService.GetImportStats(successCount, errors)
+	
+	if successCount > 0 {
+		message := fmt.Sprintf("Berhasil mengimport %d data", successCount)
+		if len(errors) > 0 {
+			message += fmt.Sprintf(", %d data gagal", len(errors))
+		}
+		
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": message,
+			"stats":   stats,
+		})
+	}
+
+	return c.JSON(http.StatusBadRequest, map[string]interface{}{
+		"success": false,
+		"message": "Tidak ada data yang berhasil diimport",
+		"stats":   stats,
+	})
 }

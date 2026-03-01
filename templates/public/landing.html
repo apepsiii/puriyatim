@@ -69,7 +69,7 @@
                     <h2 class="text-lg font-bold text-gray-900 leading-tight mb-2">Salurkan Sedekah & Zakat Anda</h2>
                     <p class="text-xs text-gray-600 mb-4 leading-relaxed">Bantu penuhi kebutuhan pendidikan dan gizi anak-anak asuh kami.</p>
                     <p class="text-xs font-bold text-emerald-600 mb-3">Transparan & Amanah</p>
-                    <a href="/jumat-berkah" class="bg-primary hover:bg-primary_dark text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-md transition-colors w-fit inline-block">
+                    <a href="/program-donasi" class="bg-primary hover:bg-primary_dark text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-md transition-colors w-fit inline-block">
                         Donasi Sekarang
                     </a>
                 </div>
@@ -102,25 +102,25 @@
                         <span class="text-xs font-medium text-gray-700 text-center leading-tight">Jumat<br>Berkah</span>
                     </a>
                     
-                    <a href="#" class="flex flex-col items-center gap-2 group">
+                    <a href="/doa-harian" class="flex flex-col items-center gap-2 group">
                         <div class="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500 text-2xl group-active:scale-95 transition-transform shadow-sm border border-emerald-100/50">
-                            <i class="fas fa-child"></i>
+                            <i class="fas fa-book-quran"></i>
                         </div>
-                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Bantu<br>Yatim</span>
+                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Doa<br>Harian</span>
                     </a>
 
-                    <a href="/zakat" class="flex flex-col items-center gap-2 group">
+                    <a href="/program-donasi" class="flex flex-col items-center gap-2 group">
                         <div class="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 text-2xl group-active:scale-95 transition-transform shadow-sm border border-rose-100/50">
-                            <i class="fas fa-mosque"></i>
+                            <i class="fas fa-hand-holding-dollar"></i>
                         </div>
-                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Zakat<br>Mal</span>
+                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Program<br>Donasi</span>
                     </a>
 
-                    <a href="#" class="flex flex-col items-center gap-2 group">
+                    <a href="/dzikir" class="flex flex-col items-center gap-2 group">
                         <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 text-2xl group-active:scale-95 transition-transform shadow-sm border border-amber-100/50">
-                            <i class="fas fa-chart-pie"></i>
+                            <i class="fas fa-moon"></i>
                         </div>
-                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Laporan<br>Dana</span>
+                        <span class="text-xs font-medium text-gray-700 text-center leading-tight">Dzikir<br>Harian</span>
                     </a>
                 </div>
             </div>
@@ -139,7 +139,7 @@
                     <a href="/berita/{{.Slug}}" class="min-w-[165px] max-w-[165px] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col snap-start group hover:border-emerald-200 hover:shadow-md transition-all">
                         <div class="h-28 bg-gray-100 relative w-full overflow-hidden">
                             {{if .GambarThumbnail}}
-                            <img src="{{.GambarThumbnail}}" alt="{{.Judul}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="console.log('Image load failed for {{.ID}}')">
+                            <img src="{{.GambarThumbnail | safeImageURL}}" alt="{{.Judul}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="console.log('Image load failed for {{.ID}}')">
                             {{else}}
                             <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
                                 <i class="fas fa-newspaper text-3xl text-emerald-300"></i>
@@ -201,9 +201,9 @@
                     <span class="text-[10px] font-medium">Zakat</span>
                 </a>
 
-                <a href="/tentang" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
-                    <i class="far fa-user text-xl"></i>
-                    <span class="text-[10px] font-medium">Profil</span>
+                <a href="/galeri" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="fas fa-images text-xl"></i>
+                    <span class="text-[10px] font-medium">Galeri</span>
                 </a>
             </div>
         </nav>

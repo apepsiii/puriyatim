@@ -71,6 +71,9 @@ type KasTransaction struct {
 	Jumlah      string
 	Type        string
 	AnakAsuh    string
+	Status      string
+	StatusLabel string
+	StatusCSS   string
 }
 
 func formatPercentChange(change float64) string {
@@ -196,6 +199,9 @@ func (h *KeuanganHandler) BukuKas(c echo.Context) error {
 			Jumlah:      formatRupiah(t.Jumlah),
 			Type:        t.Type,
 			AnakAsuh:    t.AnakAsuh,
+			Status:      string(t.Status),
+			StatusLabel: statusLabel(t.Status),
+			StatusCSS:   statusCSS(t.Status),
 		})
 	}
 
@@ -313,11 +319,12 @@ func (h *KeuanganHandler) SavePemasukan(c echo.Context) error {
 	}
 
 	pemasukan := &models.PemasukanDonasi{
-		NamaDonatur:   namaDonatur,
-		TanggalDonasi: tanggal,
-		Nominal:       nominal,
-		KategoriDana:  models.KategoriDana(kategori),
-		Catatan:       catatan,
+		NamaDonatur:      namaDonatur,
+		TanggalDonasi:    tanggal,
+		Nominal:          nominal,
+		KategoriDana:     models.KategoriDana(kategori),
+		Catatan:          catatan,
+		StatusVerifikasi: models.StatusVerifikasiPending,
 	}
 
 	err = h.service.CreatePemasukan(pemasukan)
@@ -330,7 +337,7 @@ func (h *KeuanganHandler) SavePemasukan(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,
-		"message": "Pemasukan berhasil dicatat",
+		"message": "Pemasukan berhasil dicatat (status pending, menunggu verifikasi admin)",
 		"id":      pemasukan.ID,
 	})
 }
@@ -488,18 +495,20 @@ func (h *KeuanganHandler) GetTransactionDetail(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"success": true,
 			"data": map[string]interface{}{
-				"id":          pemasukan.ID,
-				"type":        "masuk",
-				"tanggal":     pemasukan.TanggalDonasi.Format("02 January 2006"),
-				"tanggal_raw": pemasukan.TanggalDonasi.Format("2006-01-02"),
-				"waktu":       pemasukan.CreatedAt.Format("15:04") + " WIB",
-				"nominal":     formatRupiah(pemasukan.Nominal),
-				"kategori":    string(pemasukan.KategoriDana),
-				"sumber":      pemasukan.NamaDonatur,
-				"deskripsi":   "Donasi " + string(pemasukan.KategoriDana),
-				"catatan":     pemasukan.Catatan,
-				"bukti":       pemasukan.BuktiTransaksi,
-				"created_at":  pemasukan.CreatedAt.Format("02 January 2006 15:04"),
+				"id":           pemasukan.ID,
+				"type":         "masuk",
+				"tanggal":      pemasukan.TanggalDonasi.Format("02 January 2006"),
+				"tanggal_raw":  pemasukan.TanggalDonasi.Format("2006-01-02"),
+				"waktu":        pemasukan.CreatedAt.Format("15:04") + " WIB",
+				"nominal":      formatRupiah(pemasukan.Nominal),
+				"kategori":     string(pemasukan.KategoriDana),
+				"sumber":       pemasukan.NamaDonatur,
+				"deskripsi":    "Donasi " + string(pemasukan.KategoriDana),
+				"catatan":      pemasukan.Catatan,
+				"bukti":        pemasukan.BuktiTransaksi,
+				"status":       string(pemasukan.StatusVerifikasi),
+				"status_label": statusLabel(pemasukan.StatusVerifikasi),
+				"created_at":   pemasukan.CreatedAt.Format("02 January 2006 15:04"),
 			},
 		})
 	} else {
@@ -595,12 +604,13 @@ func (h *KeuanganHandler) UpdateTransaction(c echo.Context) error {
 		}
 
 		pemasukan := &models.PemasukanDonasi{
-			ID:            id,
-			NamaDonatur:   namaDonatur,
-			TanggalDonasi: tanggal,
-			Nominal:       nominal,
-			KategoriDana:  models.KategoriDana(kategori),
-			Catatan:       catatan,
+			ID:               id,
+			NamaDonatur:      namaDonatur,
+			TanggalDonasi:    tanggal,
+			Nominal:          nominal,
+			KategoriDana:     models.KategoriDana(kategori),
+			Catatan:          catatan,
+			StatusVerifikasi: "",
 		}
 
 		err = h.service.UpdatePemasukan(pemasukan)
@@ -640,6 +650,50 @@ func (h *KeuanganHandler) UpdateTransaction(c echo.Context) error {
 		"success": true,
 		"message": "Transaksi berhasil diperbarui",
 	})
+}
+
+func (h *KeuanganHandler) VerifyPemasukan(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "ID pemasukan tidak valid",
+		})
+	}
+
+	if err := h.service.VerifyPemasukan(id); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Pemasukan berhasil diverifikasi",
+	})
+}
+
+func statusLabel(status models.StatusVerifikasiPemasukan) string {
+	switch status {
+	case models.StatusVerifikasiPending:
+		return "Pending"
+	case models.StatusVerifikasiVerified:
+		return "Verified"
+	default:
+		return "Verified"
+	}
+}
+
+func statusCSS(status models.StatusVerifikasiPemasukan) string {
+	switch status {
+	case models.StatusVerifikasiPending:
+		return "bg-amber-50 text-amber-700 border border-amber-100"
+	case models.StatusVerifikasiVerified:
+		return "bg-emerald-50 text-emerald-700 border border-emerald-100"
+	default:
+		return "bg-emerald-50 text-emerald-700 border border-emerald-100"
+	}
 }
 
 func (h *KeuanganHandler) GetEditFormData(c echo.Context) error {

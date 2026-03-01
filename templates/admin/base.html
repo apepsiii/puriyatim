@@ -70,6 +70,9 @@
                 <i class="fas fa-newspaper w-5 mr-3 {{if eq .ActivePage "artikel"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
                 Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 {{if eq .ActivePage "pengaturan"}}bg-primary_light text-primary_dark rounded-lg group font-medium{{else}}text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors{{end}}">
                 <i class="fas fa-globe w-5 mr-3 {{if eq .ActivePage "pengaturan"}}text-primary{{else}}text-gray-400 group-hover:text-primary transition-colors{{end}}"></i>
                 Pengaturan Web

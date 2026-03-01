@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"puriyatim-app/internal/models"
@@ -76,8 +77,9 @@ func (r *ArtikelRepository) GetByID(id string) (*models.Artikel, error) {
 		a.GambarThumbnail = &thumbnail.String
 	}
 	if tanggalTerbit.Valid {
-		t, _ := time.Parse("2006-01-02 15:04:05", tanggalTerbit.String)
-		a.TanggalTerbit = &t
+		if t, ok := parseArtikelTime(tanggalTerbit.String); ok {
+			a.TanggalTerbit = &t
+		}
 	}
 	if createdAt.Valid {
 		a.CreatedAt = createdAt.Time
@@ -120,8 +122,9 @@ func (r *ArtikelRepository) GetBySlug(slug string) (*models.Artikel, error) {
 		a.GambarThumbnail = &thumbnail.String
 	}
 	if tanggalTerbit.Valid {
-		t, _ := time.Parse("2006-01-02 15:04:05", tanggalTerbit.String)
-		a.TanggalTerbit = &t
+		if t, ok := parseArtikelTime(tanggalTerbit.String); ok {
+			a.TanggalTerbit = &t
+		}
 	}
 	if createdAt.Valid {
 		a.CreatedAt = createdAt.Time
@@ -179,8 +182,9 @@ func (r *ArtikelRepository) GetAll() ([]*models.Artikel, error) {
 			a.GambarThumbnail = &thumbnail.String
 		}
 		if tanggalTerbit.Valid {
-			t, _ := time.Parse("2006-01-02 15:04:05", tanggalTerbit.String)
-			a.TanggalTerbit = &t
+			if t, ok := parseArtikelTime(tanggalTerbit.String); ok {
+				a.TanggalTerbit = &t
+			}
 		}
 		if createdAt.Valid {
 			a.CreatedAt = createdAt.Time
@@ -243,8 +247,9 @@ func (r *ArtikelRepository) GetPublished(limit int) ([]*models.Artikel, error) {
 			a.GambarThumbnail = &thumbnail.String
 		}
 		if tanggalTerbit.Valid {
-			t, _ := time.Parse("2006-01-02 15:04:05", tanggalTerbit.String)
-			a.TanggalTerbit = &t
+			if t, ok := parseArtikelTime(tanggalTerbit.String); ok {
+				a.TanggalTerbit = &t
+			}
 		}
 		if createdAt.Valid {
 			a.CreatedAt = createdAt.Time
@@ -322,4 +327,34 @@ func (r *ArtikelRepository) CountByStatus(status models.StatusPublikasi) (int, e
 		return 0, fmt.Errorf("failed to count artikel by status: %w", err)
 	}
 	return count, nil
+}
+
+func parseArtikelTime(raw string) (time.Time, bool) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Time{}, false
+	}
+
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04:05.999999999",
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02T15:04:05.999999999Z07:00",
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02",
+	}
+
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, value); err == nil {
+			if t.IsZero() {
+				return time.Time{}, false
+			}
+			return t, true
+		}
+	}
+
+	return time.Time{}, false
 }

@@ -16,16 +16,24 @@ const (
 	KategoriDanaLainnya KategoriDana = "Lainnya"
 )
 
+type StatusVerifikasiPemasukan string
+
+const (
+	StatusVerifikasiPending  StatusVerifikasiPemasukan = "pending"
+	StatusVerifikasiVerified StatusVerifikasiPemasukan = "verified"
+)
+
 type PemasukanDonasi struct {
-	ID             string       `json:"id_pemasukan" db:"id_pemasukan"`
-	NamaDonatur    string       `json:"nama_donatur" db:"nama_donatur"`
-	TanggalDonasi  time.Time    `json:"tanggal_donasi" db:"tanggal_donasi"`
-	Nominal        float64      `json:"nominal" db:"nominal"`
-	KategoriDana   KategoriDana `json:"kategori_dana" db:"kategori_dana"`
-	Catatan        string       `json:"catatan" db:"catatan"`
-	BuktiTransaksi string       `json:"bukti_transaksi" db:"bukti_transaksi"`
-	CreatedAt      time.Time    `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time    `json:"updated_at" db:"updated_at"`
+	ID               string                    `json:"id_pemasukan" db:"id_pemasukan"`
+	NamaDonatur      string                    `json:"nama_donatur" db:"nama_donatur"`
+	TanggalDonasi    time.Time                 `json:"tanggal_donasi" db:"tanggal_donasi"`
+	Nominal          float64                   `json:"nominal" db:"nominal"`
+	KategoriDana     KategoriDana              `json:"kategori_dana" db:"kategori_dana"`
+	Catatan          string                    `json:"catatan" db:"catatan"`
+	BuktiTransaksi   string                    `json:"bukti_transaksi" db:"bukti_transaksi"`
+	StatusVerifikasi StatusVerifikasiPemasukan `json:"status_verifikasi" db:"status_verifikasi"`
+	CreatedAt        time.Time                 `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time                 `json:"updated_at" db:"updated_at"`
 }
 
 type Pengeluaran struct {
@@ -51,6 +59,7 @@ type KasTransaction struct {
 	Type      string
 	Donatur   string
 	AnakAsuh  string
+	Status    StatusVerifikasiPemasukan
 }
 
 type KeuanganStats struct {

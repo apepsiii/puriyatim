@@ -52,6 +52,9 @@
             <a href="/admin/artikel" class="flex items-center px-3 py-2.5 bg-primary_light text-primary_dark rounded-lg group font-medium">
                 <i class="fas fa-newspaper w-5 mr-3 text-primary"></i> Artikel & Kegiatan
             </a>
+            <a href="/admin/galeri" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                <i class="fas fa-images w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Galeri
+            </a>
             <a href="/admin/pengaturan" class="flex items-center px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
                 <i class="fas fa-globe w-5 mr-3 text-gray-400 group-hover:text-primary transition-colors"></i> Pengaturan Web
             </a>
@@ -188,7 +191,7 @@
                                     <div class="flex items-center gap-4">
                                         <div class="w-16 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative border border-gray-200">
                                             {{if .HasThumbnail}}
-                                            <img src="{{.Thumbnail}}" alt="{{.Judul}}" class="w-full h-full object-cover" loading="lazy">
+                                            <img src="{{.Thumbnail | safeImageURL}}" alt="{{.Judul}}" class="w-full h-full object-cover" loading="lazy">
                                             {{else}}
                                             <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
                                                 <i class="fas fa-newspaper text-emerald-300"></i>

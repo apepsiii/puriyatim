@@ -1,0 +1,120 @@
+{{define "public/dzikir.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dzikir Harian - Puri Yatim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        primary_light: '#d1fae5',
+                        primary_dark: '#059669',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="flex justify-center min-h-screen">
+
+    <div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl overflow-x-hidden pb-24">
+        <header class="pt-6 px-5 pb-4 bg-white sticky top-0 z-30 border-b border-gray-100">
+            <div class="flex items-center justify-between mb-3">
+                <a href="/" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <h1 class="text-lg font-bold text-gray-900">Dzikir Harian</h1>
+                <a href="/dzikir" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-rotate-right"></i>
+                </a>
+            </div>
+
+            <form method="GET" action="/dzikir" class="space-y-2">
+                <div class="relative">
+                    <input type="text" name="q" value="{{.Query}}" placeholder="Cari dzikir..." class="w-full bg-gray-50 text-gray-800 text-sm rounded-xl pl-4 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary border border-gray-200 transition-all">
+                    <button type="submit" class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto hide-scrollbar">
+                    <div class="flex gap-2 min-w-max">
+                        {{range .Types}}
+                        <a href="/dzikir?type={{.}}{{if $.Query}}&q={{$.Query}}{{end}}" class="px-3 py-1.5 rounded-full text-xs font-semibold border {{if eq $.Type .}}bg-primary text-white border-primary{{else}}bg-white text-gray-700 border-gray-200 hover:border-primary_light{{end}}">
+                            {{.}}
+                        </a>
+                        {{end}}
+                    </div>
+                </div>
+            </form>
+        </header>
+
+        <main class="px-5 py-5 space-y-4">
+            {{if .DzikirList}}
+                {{range .DzikirList}}
+                <article class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">{{.Type}}</span>
+                        {{if .Ulang}}
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">{{.Ulang}}</span>
+                        {{end}}
+                    </div>
+                    <p class="text-right text-xl leading-9 text-gray-900 mb-3">{{.Arab}}</p>
+                    <p class="text-sm text-gray-600 leading-relaxed">{{.Indo}}</p>
+                </article>
+                {{end}}
+            {{else}}
+                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-6 text-center">
+                    <i class="fas fa-moon text-3xl text-gray-300 mb-2"></i>
+                    <p class="text-sm text-gray-500">Dzikir tidak ditemukan untuk pencarian/filter ini.</p>
+                </div>
+            {{end}}
+        </main>
+
+        <nav class="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-3 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-40">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="fas fa-home text-xl"></i>
+                    <span class="text-[10px] font-medium">Beranda</span>
+                </a>
+
+                <a href="/berita" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="fas fa-newspaper text-xl"></i>
+                    <span class="text-[10px] font-medium">Berita</span>
+                </a>
+
+                <a href="/jumat-berkah" class="flex flex-col items-center gap-1 -mt-5">
+                    <div class="w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 border-4 border-white transition-transform active:scale-95">
+                        <i class="fas fa-hand-holding-heart text-2xl"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-primary">Jumat Berkah</span>
+                </a>
+
+                <a href="/dzikir" class="flex flex-col items-center gap-1 text-primary">
+                    <i class="fas fa-moon text-xl"></i>
+                    <span class="text-[10px] font-bold">Dzikir</span>
+                </a>
+
+                <a href="/tentang" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-800 transition-colors">
+                    <i class="far fa-user text-xl"></i>
+                    <span class="text-[10px] font-medium">Profil</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+</body>
+</html>
+{{end}}
