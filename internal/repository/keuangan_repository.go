@@ -45,7 +45,7 @@ func (r *KeuanganRepository) CreatePemasukan(p *models.PemasukanDonasi) error {
 	}
 
 	query := `
-		INSERT INTO PEMASUKAN_DONASI (id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at)
+		INSERT OR IGNORE INTO PEMASUKAN_DONASI (id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
