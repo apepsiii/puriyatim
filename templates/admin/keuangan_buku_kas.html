@@ -251,8 +251,11 @@
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     {{if and (eq .Type "masuk") (eq .Status "pending")}}
-                                    <button onclick="verifyPemasukan('{{.ID}}')" class="text-amber-500 hover:text-emerald-600 p-2 transition-colors" title="Verifikasi Pemasukan">
-                                        <i class="fas fa-badge-check"></i>
+                                    <button onclick="verifyPemasukan('{{.ID}}')" class="text-amber-500 hover:text-emerald-600 p-1.5 transition-colors rounded-lg hover:bg-emerald-50" title="Approve / Verifikasi">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                    <button onclick="rejectPemasukan('{{.ID}}')" class="text-gray-400 hover:text-red-600 p-1.5 transition-colors rounded-lg hover:bg-red-50" title="Tolak / Hapus">
+                                        <i class="fas fa-times-circle"></i>
                                     </button>
                                     {{end}}
                                 </td>
@@ -386,25 +389,33 @@
                             </div>
                         `,
                         showCancelButton: true,
-                        showDenyButton: true,
-                        confirmButtonText: '<i class="fas fa-edit mr-1"></i> Edit',
-                        denyButtonText: '<i class="fas fa-trash mr-1"></i> Hapus',
+                        showDenyButton: isMasuk && data.status === 'pending',
+                        confirmButtonText: isMasuk && data.status === 'pending'
+                            ? '<i class="fas fa-check mr-1"></i> Approve'
+                            : '<i class="fas fa-edit mr-1"></i> Edit',
+                        denyButtonText: isMasuk && data.status === 'pending'
+                            ? '<i class="fas fa-times mr-1"></i> Tolak'
+                            : '<i class="fas fa-trash mr-1"></i> Hapus',
                         cancelButtonText: 'Tutup',
                         confirmButtonColor: '#10b981',
                         denyButtonColor: '#ef4444',
                         cancelButtonColor: '#6b7280',
                         width: '450px',
-                        showClass: {
-                            popup: 'swal2-noanimation'
-                        },
-                        hideClass: {
-                            popup: ''
-                        }
+                        showClass: { popup: 'swal2-noanimation' },
+                        hideClass: { popup: '' }
                     }).then((swalResult) => {
                         if (swalResult.isConfirmed) {
-                            editTransaction(id, type);
+                            if (isMasuk && data.status === 'pending') {
+                                verifyPemasukan(id);
+                            } else {
+                                editTransaction(id, type);
+                            }
                         } else if (swalResult.isDenied) {
-                            deleteTransaction(id, type, data.deskripsi);
+                            if (isMasuk && data.status === 'pending') {
+                                rejectPemasukan(id);
+                            } else {
+                                deleteTransaction(id, type, data.deskripsi);
+                            }
                         }
                     });
                 } else {
@@ -716,58 +727,61 @@
 
         async function verifyPemasukan(id) {
             const confirmResult = await Swal.fire({
-                title: 'Verifikasi Pemasukan?',
-                text: 'Setelah diverifikasi, nominal akan masuk ke total saldo kas.',
+                title: 'Approve Pemasukan?',
+                text: 'Setelah diapprove, nominal akan masuk ke total saldo kas.',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-check mr-1"></i> Verifikasi',
+                confirmButtonText: '<i class="fas fa-check mr-1"></i> Approve',
                 cancelButtonText: 'Batal',
                 confirmButtonColor: '#10b981',
                 cancelButtonColor: '#6b7280'
             });
 
-            if (!confirmResult.isConfirmed) {
-                return;
-            }
+            if (!confirmResult.isConfirmed) return;
 
-            Swal.fire({
-                title: 'Memproses...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+            Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
-                const response = await fetch('/admin/keuangan/pemasukan/' + id + '/verify', {
-                    method: 'POST'
-                });
+                const response = await fetch('/admin/keuangan/pemasukan/' + id + '/verify', { method: 'POST' });
                 const result = await response.json();
-
                 if (result.success) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: result.message,
-                        confirmButtonColor: '#10b981'
-                    });
+                    await Swal.fire({ icon: 'success', title: 'Berhasil', text: result.message, confirmButtonColor: '#10b981' });
                     location.reload();
                     return;
                 }
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: result.message,
-                    confirmButtonColor: '#10b981'
-                });
+                Swal.fire({ icon: 'error', title: 'Gagal', text: result.message, confirmButtonColor: '#10b981' });
             } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Gagal memverifikasi pemasukan',
-                    confirmButtonColor: '#10b981'
-                });
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal memverifikasi pemasukan', confirmButtonColor: '#10b981' });
+            }
+        }
+
+        async function rejectPemasukan(id) {
+            const confirmResult = await Swal.fire({
+                title: 'Tolak Pemasukan?',
+                text: 'Data pemasukan yang masih pending ini akan dihapus permanen.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-times mr-1"></i> Tolak & Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                const response = await fetch('/admin/keuangan/pemasukan/' + id + '/reject', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    await Swal.fire({ icon: 'success', title: 'Berhasil', text: result.message, confirmButtonColor: '#10b981' });
+                    location.reload();
+                    return;
+                }
+                Swal.fire({ icon: 'error', title: 'Gagal', text: result.message, confirmButtonColor: '#10b981' });
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal menolak pemasukan', confirmButtonColor: '#10b981' });
             }
         }
     </script>

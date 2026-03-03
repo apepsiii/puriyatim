@@ -598,6 +598,24 @@ func (r *KeuanganRepository) VerifyPemasukan(id string) error {
 	return nil
 }
 
+// RejectPemasukan menghapus pemasukan yang masih berstatus pending (tolak/batalkan).
+func (r *KeuanganRepository) RejectPemasukan(id string) error {
+	// Pastikan hanya yang pending yang bisa di-reject
+	var status string
+	err := r.db.QueryRow(`SELECT status_verifikasi FROM PEMASUKAN_DONASI WHERE id_pemasukan = ?`, id).Scan(&status)
+	if err != nil {
+		return fmt.Errorf("pemasukan tidak ditemukan")
+	}
+	if status != "pending" {
+		return fmt.Errorf("hanya pemasukan berstatus 'pending' yang dapat ditolak")
+	}
+	_, err = r.db.Exec(`DELETE FROM PEMASUKAN_DONASI WHERE id_pemasukan = ?`, id)
+	if err != nil {
+		return fmt.Errorf("failed to reject pemasukan: %w", err)
+	}
+	return nil
+}
+
 func normalizeStatus(status string) models.StatusVerifikasiPemasukan {
 	switch strings.ToLower(strings.TrimSpace(status)) {
 	case string(models.StatusVerifikasiPending):

@@ -276,6 +276,7 @@ func main() {
 		admin.GET("/keuangan/pemasukan", keuanganHandler.CatatPemasukan)
 		admin.POST("/keuangan/pemasukan", keuanganHandler.SavePemasukan)
 		admin.POST("/keuangan/pemasukan/:id/verify", keuanganHandler.VerifyPemasukan)
+		admin.POST("/keuangan/pemasukan/:id/reject", keuanganHandler.RejectPemasukan)
 		admin.GET("/keuangan/pengeluaran", keuanganHandler.CatatPengeluaran)
 		admin.POST("/keuangan/pengeluaran", keuanganHandler.SavePengeluaran)
 		admin.POST("/keuangan/donatur", keuanganHandler.CreateDonatur)

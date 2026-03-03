@@ -317,6 +317,10 @@ func (s *KeuanganService) VerifyPemasukan(id string) error {
 	return s.repo.VerifyPemasukan(id)
 }
 
+func (s *KeuanganService) RejectPemasukan(id string) error {
+	return s.repo.RejectPemasukan(id)
+}
+
 func (s *KeuanganService) GetPemasukanByNomorHP(nomorHP string) ([]*models.PemasukanDonasi, error) {
 	return s.repo.GetPemasukanByNomorHP(nomorHP)
 }

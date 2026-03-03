@@ -595,6 +595,25 @@ func (h *KeuanganHandler) VerifyPemasukan(c echo.Context) error {
 	return JSONOk(c, "Pemasukan berhasil diverifikasi")
 }
 
+func (h *KeuanganHandler) RejectPemasukan(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "ID pemasukan tidak valid",
+		})
+	}
+
+	if err := h.service.RejectPemasukan(id); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return JSONOk(c, "Pemasukan berhasil ditolak dan dihapus")
+}
+
 func (h *KeuanganHandler) GetEditFormData(c echo.Context) error {
 	anakList, _ := h.anakAsuhService.GetAll()
 	anakOptions := make([]map[string]string, 0, len(anakList))
