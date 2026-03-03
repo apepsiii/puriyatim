@@ -11,6 +11,7 @@ import (
 	authmw "puriyatim-app/internal/middleware"
 	"puriyatim-app/internal/repository"
 	"puriyatim-app/internal/services"
+	"puriyatim-app/pkg/pakasir"
 	"strings"
 	"time"
 
@@ -105,6 +106,33 @@ func main() {
 		"add": func(a, b int) int {
 			return a + b
 		},
+		"not": func(v bool) bool {
+			return !v
+		},
+		"formatTime": func(t interface{}) string {
+			switch v := t.(type) {
+			case time.Time:
+				return v.Format("02 Jan 2006, 15:04")
+			case *time.Time:
+				if v == nil {
+					return "-"
+				}
+				return v.Format("02 Jan 2006, 15:04")
+			}
+			return "-"
+		},
+		"isoTime": func(t interface{}) string {
+			switch v := t.(type) {
+			case time.Time:
+				return v.Format(time.RFC3339)
+			case *time.Time:
+				if v == nil {
+					return ""
+				}
+				return v.Format(time.RFC3339)
+			}
+			return ""
+		},
 	}
 
 	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("templates/**/*.html"))
@@ -133,6 +161,7 @@ func main() {
 	var pengaturanRepo *repository.PengaturanRepository
 	var galeriRepo *repository.GaleriRepository
 	var rekeningRepo *repository.RekeningDonasiRepository
+	var donasiOnlineRepo *repository.DonasiOnlineRepository
 
 	if db != nil {
 		pengurusRepo = repository.NewPengurusRepository(db.DB)
@@ -143,6 +172,7 @@ func main() {
 		pengaturanRepo = repository.NewPengaturanRepository(db.DB)
 		galeriRepo = repository.NewGaleriRepository(db.DB)
 		rekeningRepo = repository.NewRekeningDonasiRepository(db.DB)
+		donasiOnlineRepo = repository.NewDonasiOnlineRepository(db.DB)
 		defer db.Close()
 	}
 
@@ -156,6 +186,10 @@ func main() {
 	rekeningService := services.NewRekeningDonasiService(rekeningRepo)
 	exportImportService := services.NewExportImportService(anakAsuhService)
 
+	// Pakasir payment gateway
+	pakasirClient := pakasir.NewClient(cfg.Pakasir.ProjectSlug, cfg.Pakasir.APIKey)
+	donasiOnlineService := services.NewDonasiOnlineService(donasiOnlineRepo, keuanganRepo, pakasirClient)
+
 	dashboardHandler := handlers.NewDashboardHandler(cfg, anakAsuhService, keuanganService, jumatBerkahService)
 	publicHandler := handlers.NewPublicHandler(jumatBerkahService, anakAsuhService, artikelService, keuanganService, pengaturanService)
 	authHandler := handlers.NewAuthHandler(authService)
@@ -166,6 +200,7 @@ func main() {
 	pengaturanHandler := handlers.NewPengaturanHandler(pengaturanService, rekeningService)
 	jumatBerkahHandler := handlers.NewJumatBerkahHandler(jumatBerkahService)
 	galeriHandler := handlers.NewGaleriHandler(galeriService, pengaturanService)
+	donasiHandler := handlers.NewDonasiHandler(donasiOnlineService)
 
 	e.GET("/", publicHandler.LandingPage)
 	e.GET("/tentang", publicHandler.AboutPage)
@@ -189,6 +224,14 @@ func main() {
 	e.GET("/galeri", galeriHandler.PublicPage)
 	e.POST("/api/newsletter", publicHandler.SubscribeNewsletter)
 	e.GET("/offline", publicHandler.OfflinePage)
+
+	// Donasi online via Pakasir
+	e.POST("/api/donasi/create", donasiHandler.CreateTransaction)
+	e.GET("/api/donasi/status/:order_id", donasiHandler.GetStatus)
+	e.POST("/api/donasi/cancel", donasiHandler.CancelTransaction)
+	e.POST("/api/pakasir/webhook", donasiHandler.Webhook)
+	e.GET("/donasi/bayar/:order_id", donasiHandler.PaymentPage)
+	e.GET("/donasi/sukses/:order_id", donasiHandler.SuccessPage)
 
 	e.GET("/admin/login", authHandler.LoginPage)
 	e.POST("/admin/login", authHandler.Login)

@@ -1,0 +1,83 @@
+{{template "public/base.html" .}}
+
+{{define "content"}}
+{{$donasi := .Donasi}}
+
+<!-- Hero -->
+<section class="bg-gradient-to-br from-primary to-primary_dark text-white py-12">
+    <div class="max-w-3xl mx-auto px-4 text-center">
+        <div class="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-check text-white text-3xl"></i>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold mb-2">Pembayaran Berhasil!</h1>
+        <p class="text-emerald-100">Donasi Anda telah kami terima. Jazakallahu khairan katsiran 🤲</p>
+    </div>
+</section>
+
+<section class="py-10 bg-gray-50 min-h-screen">
+    <div class="max-w-xl mx-auto px-4">
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <h2 class="text-base font-semibold text-gray-700 mb-4 border-b pb-3">Detail Transaksi</h2>
+            <div class="space-y-3 text-sm">
+                {{if $donasi}}
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Order ID</span>
+                    <span class="font-mono text-gray-800 select-all text-xs">{{$donasi.OrderID}}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Donatur</span>
+                    <span class="font-semibold text-gray-800">{{$donasi.NamaDonatur}}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Jenis</span>
+                    <span class="font-medium text-gray-800 capitalize">{{$donasi.Jenis}}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Nominal</span>
+                    <span class="font-bold text-primary">Rp {{printf "%.0f" $donasi.Nominal}}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Metode</span>
+                    <span class="font-medium text-gray-800">{{$donasi.PaymentMethod}}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Status</span>
+                    <span class="inline-flex items-center gap-1 text-green-600 font-semibold">
+                        <i class="fas fa-check-circle text-xs"></i> Terverifikasi
+                    </span>
+                </div>
+                {{if $donasi.CompletedAt}}
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Waktu</span>
+                    <span class="text-gray-700">{{formatTime $donasi.CompletedAt}}</span>
+                </div>
+                {{end}}
+                {{else}}
+                <p class="text-center text-gray-400 italic py-2">Detail transaksi tidak tersedia</p>
+                {{end}}
+            </div>
+        </div>
+
+        <!-- Quote / Pesan -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 mb-6 text-center">
+            <i class="fas fa-mosque text-primary text-2xl mb-3"></i>
+            <p class="text-sm text-gray-600 italic">
+                "Perumpamaan orang yang menginfakkan hartanya di jalan Allah seperti sebutir biji yang menumbuhkan tujuh tangkai, pada setiap tangkai ada seratus biji."
+            </p>
+            <p class="text-xs text-gray-400 mt-2">— QS. Al-Baqarah: 261</p>
+        </div>
+
+        <!-- Tombol aksi -->
+        <div class="grid grid-cols-2 gap-3">
+            <a href="/" class="bg-primary text-white text-center py-3 rounded-xl font-semibold text-sm hover:bg-primary_dark transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-home"></i> Beranda
+            </a>
+            <a href="/program-donasi" class="bg-white border border-gray-200 text-gray-700 text-center py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-heart text-primary"></i> Donasi Lagi
+            </a>
+        </div>
+
+    </div>
+</section>
+{{end}}
