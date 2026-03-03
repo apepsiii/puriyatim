@@ -281,7 +281,7 @@
                             </button>
                         </div>
                         {{end}}
-                        {{if not .RekeningList}}
+                        {{if eq (len .RekeningList) 0}}
                         <p id="emptyState" class="text-sm text-gray-400 italic text-center py-4">Belum ada rekening. Tambahkan di bawah.</p>
                         {{end}}
                     </div>
