@@ -18,6 +18,7 @@ type DashboardHandler struct {
 	anakAsuhService    *services.AnakAsuhService
 	keuanganService    *services.KeuanganService
 	jumatBerkahService *services.JumatBerkahService
+	artikelService     *services.ArtikelService
 }
 
 func NewDashboardHandler(
@@ -25,12 +26,14 @@ func NewDashboardHandler(
 	anakAsuhService *services.AnakAsuhService,
 	keuanganService *services.KeuanganService,
 	jumatBerkahService *services.JumatBerkahService,
+	artikelService *services.ArtikelService,
 ) *DashboardHandler {
 	return &DashboardHandler{
 		cfg:                cfg,
 		anakAsuhService:    anakAsuhService,
 		keuanganService:    keuanganService,
 		jumatBerkahService: jumatBerkahService,
+		artikelService:     artikelService,
 	}
 }
 
@@ -105,6 +108,9 @@ func (h *DashboardHandler) Dashboard(c echo.Context) error {
 
 	anakAsuhCount, _ := h.anakAsuhService.Count()
 
+	// Artikel terbit
+	artikelCount, _ := h.artikelService.CountByStatus(models.StatusPublikasiTerbit)
+
 	// Ambil data chart & summary keuangan
 	keuanganDash, _ := h.keuanganService.GetDashboardKeuangan()
 	kasTersedia := FormatRupiah(keuanganDash.Stats.TotalSaldo)
@@ -141,7 +147,7 @@ func (h *DashboardHandler) Dashboard(c echo.Context) error {
 		KasTersedia:        kasTersedia,
 		PendingJumatBerkah: pendingCount,
 		KuotaJumatBerkah:   kuota,
-		ArtikelCount:       "0",
+		ArtikelCount:       fmt.Sprintf("%d", artikelCount),
 	}
 
 	pendingJumatBerkah := []PendingJumatBerkahItem{}

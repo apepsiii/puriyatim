@@ -197,7 +197,7 @@ func main() {
 	pakasirClient := pakasir.NewClient(cfg.Pakasir.ProjectSlug, cfg.Pakasir.APIKey)
 	donasiOnlineService := services.NewDonasiOnlineService(donasiOnlineRepo, keuanganRepo, pakasirClient)
 
-	dashboardHandler := handlers.NewDashboardHandler(cfg, anakAsuhService, keuanganService, jumatBerkahService)
+	dashboardHandler := handlers.NewDashboardHandler(cfg, anakAsuhService, keuanganService, jumatBerkahService, artikelService)
 	publicHandler := handlers.NewPublicHandler(jumatBerkahService, anakAsuhService, artikelService, keuanganService, pengaturanService, cfg.DonasiMinNominal)
 	authHandler := handlers.NewAuthHandler(authService)
 	authMiddleware := authmw.NewAuthMiddleware(authService)
