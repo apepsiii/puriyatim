@@ -4,343 +4,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Konfirmasi Donasi - Puri Yatim</title>
+    <title>Donasi Digital - Puri Yatim</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }</style>
+    <meta http-equiv="refresh" content="3;url=/program-donasi">
 </head>
-<body class="flex justify-center min-h-screen">
-    <div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl overflow-x-hidden pb-28">
-        <header class="pt-6 px-5 pb-4 bg-white sticky top-0 z-30 border-b border-gray-100 flex items-center gap-4">
-            <a href="/program-donasi" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
-                <i class="fas fa-chevron-left text-sm"></i>
-            </a>
-            <div>
-                <h1 class="text-lg font-bold text-gray-900">Konfirmasi Donasi</h1>
-                <p class="text-xs text-gray-500">Langkah 2 dari 2</p>
-            </div>
-        </header>
-
-        <main class="px-5 pt-5 space-y-4">
-            <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
-                <p class="text-sm font-semibold text-emerald-800">Kata Mutiara</p>
-                <p class="text-sm text-emerald-700 mt-1">"Sedekah tidak mengurangi harta, justru membuka pintu keberkahan yang lebih luas."</p>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-                <div class="flex justify-between text-sm"><span class="text-gray-500">Program</span><span id="v-program" class="font-semibold text-gray-900">-</span></div>
-                <div class="flex justify-between text-sm"><span class="text-gray-500">Nama Donatur</span><span id="v-nama" class="font-semibold text-gray-900">-</span></div>
-                <div class="flex justify-between text-sm"><span class="text-gray-500">Nomor HP</span><span id="v-hp" class="font-semibold text-gray-900">-</span></div>
-                <div class="flex justify-between text-sm"><span class="text-gray-500">Jumlah Donasi</span><span id="v-nominal" class="font-bold text-emerald-700">-</span></div>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
-                <p class="text-sm font-semibold text-gray-900">Tujuan Transfer</p>
-                <div class="flex items-center justify-between gap-3 text-sm text-gray-700 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
-                    <div>BSI - <strong id="rek-bsi">{{.RekeningBSI}}</strong><br><span class="text-xs text-gray-500">a.n. {{.NamaRekening}}</span></div>
-                    <button type="button" onclick="copyRekening('rek-bsi', 'Rekening BSI')" class="text-xs px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-gray-100">Copy</button>
-                </div>
-                <div class="flex items-center justify-between gap-3 text-sm text-gray-700 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
-                    <div>Mandiri - <strong id="rek-mandiri">{{.RekeningMandiri}}</strong><br><span class="text-xs text-gray-500">a.n. {{.NamaRekening}}</span></div>
-                    <button type="button" onclick="copyRekening('rek-mandiri', 'Rekening Mandiri')" class="text-xs px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-gray-100">Copy</button>
-                </div>
-            </div>
-
-            <form id="confirmForm" class="bg-white rounded-2xl border border-gray-100 p-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Upload Bukti Transfer <span class="text-red-500">*</span></label>
-                <input type="file" id="bukti" accept="image/png,image/jpeg,image/jpg,image/webp" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-                <p class="text-xs text-gray-500 mt-2">Setelah upload, status donasi menjadi <strong>menunggu verifikasi</strong>.</p>
-            </form>
-
-            <div id="proofPreviewContainer" class="hidden bg-white rounded-2xl border border-gray-100 p-4">
-                <p class="text-xs text-gray-600 mb-2">Bukti transfer terupload:</p>
-                <img id="proofPreview" src="" alt="Bukti Transfer" class="w-full h-40 object-cover rounded-xl border border-gray-200 cursor-pointer">
-            </div>
-
-            <div id="statusBox" class="hidden bg-white rounded-2xl border border-gray-100 p-4">
-                <p class="text-sm font-medium text-gray-800">Status Donasi:</p>
-                <p id="statusText" class="text-sm mt-1 text-amber-600">Menunggu Verifikasi</p>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-gray-100 p-4">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-gray-800">Riwayat Donasi Saya</p>
-                    <button id="historyBtn" class="text-xs px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700">Muat Riwayat</button>
-                </div>
-                <div id="historyEmpty" class="text-xs text-gray-500 mt-2">Belum ada riwayat ditampilkan.</div>
-                <div id="historyList" class="mt-3 space-y-2"></div>
-            </div>
-        </main>
-
-        <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-40">
-            <button id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-4 rounded-2xl">
-                Konfirmasi & Upload Bukti
-            </button>
-            <button id="checkBtn" class="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-2xl hidden">
-                Cek Status Verifikasi
-            </button>
+<body class="flex justify-center min-h-screen items-center">
+    <div class="w-full max-w-md bg-white min-h-screen flex flex-col items-center justify-center px-8 text-center shadow-2xl">
+        <div class="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6">
+            <i class="fas fa-rocket text-3xl text-emerald-600"></i>
         </div>
+        <h1 class="text-xl font-bold text-gray-900 mb-3">Pembayaran Kini Lebih Mudah!</h1>
+        <p class="text-sm text-gray-600 mb-6">Kami telah meningkatkan sistem donasi ke pembayaran digital otomatis. Anda tidak perlu lagi upload bukti transfer secara manual.</p>
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 w-full text-left mb-6 space-y-2">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-check-circle text-emerald-500 mt-0.5"></i>
+                <p class="text-sm text-emerald-800">Bayar via <strong>QRIS</strong> (GoPay, OVO, Dana, ShopeePay)</p>
+            </div>
+            <div class="flex items-start gap-3">
+                <i class="fas fa-check-circle text-emerald-500 mt-0.5"></i>
+                <p class="text-sm text-emerald-800">Bayar via <strong>Virtual Account</strong> BRI, BNI, atau Mandiri</p>
+            </div>
+            <div class="flex items-start gap-3">
+                <i class="fas fa-check-circle text-emerald-500 mt-0.5"></i>
+                <p class="text-sm text-emerald-800">Status donasi <strong>otomatis terverifikasi</strong> tanpa menunggu konfirmasi manual</p>
+            </div>
+        </div>
+        <p class="text-xs text-gray-400 mb-6">Anda akan diarahkan ulang ke halaman donasi dalam 3 detik...</p>
+        <a href="/program-donasi" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-colors">
+            <i class="fas fa-heart"></i>
+            <span>Donasi Sekarang</span>
+        </a>
     </div>
-
-    <script>
-        const STORAGE_KEY = 'programDonasiDraft';
-        const LAST_KEY = 'programDonasiLastSubmission';
-        const ADMIN_WA = '{{.NomorWA}}';
-        let draft = null;
-        let primaryMode = 'upload';
-
-        function formatRupiah(value) {
-            const clean = String(value || '').replace(/\D/g, '');
-            if (!clean) return 'Rp 0';
-            return 'Rp ' + parseInt(clean, 10).toLocaleString('id-ID');
-        }
-
-        function getProgramLabel(key) {
-            const map = { zakat: 'Zakat', infaq: 'Infaq', sedekah: 'Sedekah', wakaf: 'Wakaf', lainnya: 'Program Lainnya' };
-            return map[key] || key || '-';
-        }
-
-        async function copyRekening(elementId, label) {
-            const value = (document.getElementById(elementId)?.textContent || '').trim();
-            if (!value) {
-                Swal.fire({ icon: 'warning', title: 'Nomor rekening kosong' });
-                return;
-            }
-            try {
-                await navigator.clipboard.writeText(value);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Tersalin',
-                    text: label + ' berhasil disalin',
-                    timer: 1200,
-                    showConfirmButton: false
-                });
-            } catch (e) {
-                Swal.fire({ icon: 'error', title: 'Gagal menyalin', text: 'Silakan salin manual.' });
-            }
-        }
-
-        function loadDraft() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return null;
-                return JSON.parse(raw);
-            } catch (e) { return null; }
-        }
-
-        function renderProof(url) {
-            if (!url) return;
-            const container = document.getElementById('proofPreviewContainer');
-            const img = document.getElementById('proofPreview');
-            img.src = url;
-            img.onclick = () => {
-                Swal.fire({
-                    title: 'Bukti Transfer',
-                    imageUrl: url,
-                    imageAlt: 'Bukti Transfer',
-                    confirmButtonColor: '#10b981'
-                });
-            };
-            container.classList.remove('hidden');
-        }
-
-        function switchToConfirmAdminMode() {
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.textContent = 'Konfirmasi Admin';
-            submitBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-            submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-            primaryMode = 'wa';
-        }
-
-        function renderDraft() {
-            draft = loadDraft();
-            if (!draft) {
-                const rawLast = localStorage.getItem(LAST_KEY);
-                if (rawLast) {
-                    try {
-                        const last = JSON.parse(rawLast);
-                        document.getElementById('v-program').textContent = getProgramLabel(last.program || '');
-                        document.getElementById('v-nama').textContent = last.nama || '-';
-                        document.getElementById('v-hp').textContent = last.nomor_hp || '-';
-                        document.getElementById('v-nominal').textContent = formatRupiah(last.nominal || 0);
-                        document.getElementById('statusBox').classList.remove('hidden');
-                        document.getElementById('statusText').textContent = 'Menunggu Verifikasi';
-                        document.getElementById('checkBtn').classList.remove('hidden');
-                        document.getElementById('confirmForm').classList.add('hidden');
-                        if (last.bukti) renderProof(last.bukti);
-                        switchToConfirmAdminMode();
-                        return true;
-                    } catch (e) {}
-                }
-                Swal.fire({ icon: 'warning', title: 'Data Donasi Kosong', text: 'Silakan isi form donasi terlebih dahulu.' })
-                    .then(() => window.location.href = '/program-donasi');
-                return false;
-            }
-            document.getElementById('v-program').textContent = getProgramLabel(draft.program);
-            document.getElementById('v-nama').textContent = draft.nama || '-';
-            document.getElementById('v-hp').textContent = draft.nomor_hp || '-';
-            document.getElementById('v-nominal').textContent = formatRupiah(draft.nominal);
-            return true;
-        }
-
-        async function submitConfirmation() {
-            if (!draft) return;
-            const fileInput = document.getElementById('bukti');
-            if (!fileInput.files || !fileInput.files.length) {
-                Swal.fire({ icon: 'warning', title: 'Upload Bukti', text: 'Silakan pilih file bukti transfer terlebih dahulu.' });
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('program', draft.program || '');
-            formData.append('nama', draft.nama || '');
-            formData.append('nomor_hp', draft.nomor_hp || '');
-            formData.append('nominal', draft.nominal || '');
-            formData.append('metode', draft.metode || '');
-            formData.append('bukti_transfer', fileInput.files[0]);
-
-            Swal.fire({ title: 'Mengirim bukti transfer...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            try {
-                const resp = await fetch('/api/program-donasi/confirm', { method: 'POST', body: formData });
-                const result = await resp.json();
-                if (!result.success) {
-                    Swal.fire({ icon: 'error', title: 'Gagal', text: result.message || 'Gagal mengirim bukti transfer.' });
-                    return;
-                }
-
-                localStorage.setItem(LAST_KEY, JSON.stringify({
-                    id: result.id,
-                    status: result.status,
-                    nomor_hp: draft.nomor_hp || '',
-                    nama: draft.nama || '',
-                    program: draft.program || '',
-                    nominal: draft.nominal || '',
-                    metode: draft.metode || '',
-                    bukti: result.bukti || '',
-                    submitted_at: Date.now()
-                }));
-                localStorage.removeItem(STORAGE_KEY);
-
-                document.getElementById('statusBox').classList.remove('hidden');
-                document.getElementById('statusText').textContent = 'Menunggu Verifikasi';
-                document.getElementById('checkBtn').classList.remove('hidden');
-                document.getElementById('confirmForm').classList.add('hidden');
-                renderProof(result.bukti || '');
-                switchToConfirmAdminMode();
-
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: result.message,
-                    confirmButtonColor: '#10b981'
-                });
-            } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Tidak dapat terhubung ke server.' });
-            }
-        }
-
-        async function checkStatus() {
-            try {
-                const raw = localStorage.getItem(LAST_KEY);
-                if (!raw) return;
-                const last = JSON.parse(raw);
-                if (!last.id) return;
-                Swal.fire({
-                    title: 'Mengecek status verifikasi...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
-                const resp = await fetch('/api/program-donasi/status/' + encodeURIComponent(last.id));
-                const result = await resp.json();
-                Swal.close();
-                if (result.success && result.data) {
-                    document.getElementById('statusBox').classList.remove('hidden');
-                    document.getElementById('statusText').textContent = result.data.statusText || result.data.status;
-                    if (result.data.status === 'verified') {
-                        document.getElementById('statusText').classList.remove('text-amber-600');
-                        document.getElementById('statusText').classList.add('text-emerald-600');
-                    }
-                }
-            } catch (e) {}
-        }
-
-        function sendWhatsAppConfirmation() {
-            const raw = localStorage.getItem(LAST_KEY);
-            if (!raw) return;
-            const last = JSON.parse(raw);
-            const program = getProgramLabel(last.program || '');
-            const nominal = formatRupiah(last.nominal || '0');
-            const msg =
-`Assalamu'alaikum Admin Puri Yatim.
-
-Saya sudah melakukan donasi program:
-- Program: ${program}
-- Nama Donatur: ${last.nama || '-'}
-- Nomor HP: ${last.nomor_hp || '-'}
-- Jumlah Donasi: ${nominal}
-- Metode: ${last.metode || '-'}
-- ID Donasi: ${last.id || '-'}
-
-Mohon dibantu konfirmasi verifikasi donasi saya. Terima kasih.`;
-
-            const wa = (ADMIN_WA || '').replace(/\D/g, '');
-            if (!wa) {
-                Swal.fire({ icon: 'warning', title: 'Nomor WhatsApp Admin Belum Diset', text: 'Silakan hubungi admin melalui kontak resmi.' });
-                return;
-            }
-            window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
-        }
-
-        async function loadHistory() {
-            const hp = draft && draft.nomor_hp ? draft.nomor_hp : (JSON.parse(localStorage.getItem(LAST_KEY) || '{}').nomor_hp || '');
-            if (!hp) {
-                document.getElementById('historyEmpty').textContent = 'Nomor HP tidak ditemukan.';
-                return;
-            }
-            try {
-                const resp = await fetch('/api/program-donasi/history?nomor_hp=' + encodeURIComponent(hp));
-                const result = await resp.json();
-                const listEl = document.getElementById('historyList');
-                const emptyEl = document.getElementById('historyEmpty');
-                listEl.innerHTML = '';
-                if (!result.success || !result.data || !result.data.length) {
-                    emptyEl.textContent = 'Belum ada riwayat donasi untuk nomor ini.';
-                    return;
-                }
-                emptyEl.textContent = '';
-                result.data.forEach(item => {
-                    const row = document.createElement('div');
-                    row.className = 'rounded-xl border border-gray-100 p-3 bg-gray-50';
-                    const statusClass = item.status === 'verified' ? 'text-emerald-600' : 'text-amber-600';
-                    row.innerHTML = `
-                        <div class="flex justify-between text-xs">
-                            <span class="font-medium text-gray-800">${item.program || '-'}</span>
-                            <span class="${statusClass} font-semibold">${item.status_text || item.status}</span>
-                        </div>
-                        <div class="text-xs text-gray-600 mt-1">${item.tanggal} - Rp ${Math.round(item.nominal || 0).toLocaleString('id-ID')}</div>
-                    `;
-                    listEl.appendChild(row);
-                });
-            } catch (e) {
-                document.getElementById('historyEmpty').textContent = 'Gagal memuat riwayat donasi.';
-            }
-        }
-
-        if (renderDraft()) {
-            document.getElementById('submitBtn').addEventListener('click', function() {
-                if (primaryMode === 'wa') {
-                    sendWhatsAppConfirmation();
-                    return;
-                }
-                submitConfirmation();
-            });
-            document.getElementById('checkBtn').addEventListener('click', checkStatus);
-            document.getElementById('historyBtn').addEventListener('click', loadHistory);
-            checkStatus();
-        }
-    </script>
 </body>
 </html>
 {{end}}
