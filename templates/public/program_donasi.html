@@ -166,7 +166,10 @@
             if (!paymentMethod) { showWarn('Pilih metode pembayaran.'); return; }
 
             const nominal = parseInt(nominalRaw);
-            if (nominal < 1000) { showWarn('Minimal donasi Rp 1.000.'); return; }
+            {{if gt .MinNominal 0}}
+            const minNominal = {{.MinNominal}};
+            if (nominal < minNominal) { showWarn('Minimal donasi Rp ' + minNominal.toLocaleString('id-ID') + '.'); return; }
+            {{end}}
 
             // Simpan draft
             localStorage.setItem('programDonasiDraft', JSON.stringify({

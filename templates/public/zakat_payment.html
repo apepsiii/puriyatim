@@ -197,10 +197,13 @@
             }
 
             const nominal = parseInt(nominalRaw);
-            if (nominal < 1000) {
-                Swal.fire({ icon: 'warning', title: 'Nominal Terlalu Kecil', text: 'Minimal zakat Rp 1.000.', confirmButtonColor: '#10b981' });
+            {{if gt .MinNominal 0}}
+            const minNominal = {{.MinNominal}};
+            if (nominal < minNominal) {
+                Swal.fire({ icon: 'warning', title: 'Nominal Terlalu Kecil', text: 'Minimal zakat Rp ' + minNominal.toLocaleString('id-ID') + '.', confirmButtonColor: '#10b981' });
                 return;
             }
+            {{end}}
 
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;

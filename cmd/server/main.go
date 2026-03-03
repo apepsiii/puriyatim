@@ -198,7 +198,7 @@ func main() {
 	donasiOnlineService := services.NewDonasiOnlineService(donasiOnlineRepo, keuanganRepo, pakasirClient)
 
 	dashboardHandler := handlers.NewDashboardHandler(cfg, anakAsuhService, keuanganService, jumatBerkahService)
-	publicHandler := handlers.NewPublicHandler(jumatBerkahService, anakAsuhService, artikelService, keuanganService, pengaturanService)
+	publicHandler := handlers.NewPublicHandler(jumatBerkahService, anakAsuhService, artikelService, keuanganService, pengaturanService, cfg.DonasiMinNominal)
 	authHandler := handlers.NewAuthHandler(authService)
 	authMiddleware := authmw.NewAuthMiddleware(authService)
 	anakAsuhHandler := handlers.NewAnakAsuhHandler(anakAsuhService, keuanganService, jumatBerkahService, exportImportService)

@@ -3,20 +3,22 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port       string
-	Env        string
-	DBPath     string
-	OneSender  OneSenderConfig
-	Pakasir    PakasirConfig
-	JWTSecret  string
-	AppName    string
-	AppVersion string
-	AppURL     string
+	Port            string
+	Env             string
+	DBPath          string
+	OneSender       OneSenderConfig
+	Pakasir         PakasirConfig
+	JWTSecret       string
+	AppName         string
+	AppVersion      string
+	AppURL          string
+	DonasiMinNominal int64
 }
 
 type OneSenderConfig struct {
@@ -54,12 +56,22 @@ func LoadConfig() *Config {
 			ProjectSlug: getEnv("PAKASIR_PROJECT_SLUG", ""),
 			APIKey:      getEnv("PAKASIR_API_KEY", ""),
 		},
+		DonasiMinNominal: getEnvInt64("DONASI_MIN_NOMINAL", 0),
 	}
 }
 
 func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvInt64(key string, defaultValue int64) int64 {
+	if value, exists := os.LookupEnv(key); exists {
+		if parsed, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return parsed
+		}
 	}
 	return defaultValue
 }

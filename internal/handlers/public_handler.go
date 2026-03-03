@@ -26,15 +26,17 @@ type PublicHandler struct {
 	artikelService     *services.ArtikelService
 	keuanganService    *services.KeuanganService
 	pengaturanService  *services.PengaturanService
+	donasiMinNominal   int64
 }
 
-func NewPublicHandler(jumatBerkahService *services.JumatBerkahService, anakAsuhService *services.AnakAsuhService, artikelService *services.ArtikelService, keuanganService *services.KeuanganService, pengaturanService *services.PengaturanService) *PublicHandler {
+func NewPublicHandler(jumatBerkahService *services.JumatBerkahService, anakAsuhService *services.AnakAsuhService, artikelService *services.ArtikelService, keuanganService *services.KeuanganService, pengaturanService *services.PengaturanService, donasiMinNominal int64) *PublicHandler {
 	return &PublicHandler{
 		jumatBerkahService: jumatBerkahService,
 		anakAsuhService:    anakAsuhService,
 		artikelService:     artikelService,
 		keuanganService:    keuanganService,
 		pengaturanService:  pengaturanService,
+		donasiMinNominal:   donasiMinNominal,
 	}
 }
 
@@ -323,6 +325,7 @@ func (h *PublicHandler) ProgramDonasiPage(c echo.Context) error {
 		"Title":      "Program Donasi",
 		"ActivePage": "program",
 		"Year":       time.Now().Year(),
+		"MinNominal": h.donasiMinNominal,
 		"Programs": []map[string]string{
 			{"key": "zakat", "label": "Zakat", "desc": "Penyaluran zakat sesuai asnaf", "icon": "fa-mosque", "color": "emerald"},
 			{"key": "infaq", "label": "Infaq", "desc": "Dukungan kebutuhan operasional harian", "icon": "fa-hand-holding-dollar", "color": "blue"},
@@ -464,6 +467,7 @@ func (h *PublicHandler) ZakatPayment(c echo.Context) error {
 		"Title":      "Pembayaran Zakat",
 		"ActivePage": "zakat",
 		"Year":       time.Now().Year(),
+		"MinNominal": h.donasiMinNominal,
 	}
 
 	return c.Render(http.StatusOK, "public/zakat_payment.html", data)
