@@ -721,3 +721,86 @@ func (r *KeuanganRepository) GetPemasukanByNomorHP(nomorHP string) ([]*models.Pe
 
 	return list, nil
 }
+
+// KategoriTotal menyimpan total pemasukan per kategori dana.
+type KategoriTotal struct {
+	Kategori string
+	Total    float64
+}
+
+// GetPemasukanByKategori menghitung total pemasukan verified per kategori dana.
+func (r *KeuanganRepository) GetPemasukanByKategori() ([]KategoriTotal, error) {
+	query := `
+		SELECT kategori_dana, COALESCE(SUM(nominal), 0)
+		FROM PEMASUKAN_DONASI
+		WHERE status_verifikasi = 'verified'
+		GROUP BY kategori_dana
+		ORDER BY SUM(nominal) DESC
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("GetPemasukanByKategori: %w", err)
+	}
+	defer rows.Close()
+
+	var result []KategoriTotal
+	for rows.Next() {
+		var kt KategoriTotal
+		if err := rows.Scan(&kt.Kategori, &kt.Total); err != nil {
+			return nil, err
+		}
+		result = append(result, kt)
+	}
+	return result, nil
+}
+
+// BulanTotal menyimpan total pemasukan & pengeluaran per bulan (label "Jan 2026").
+type BulanTotal struct {
+	Label       string
+	Pemasukan   float64
+	Pengeluaran float64
+}
+
+// GetPemasukanPengeluaranBulanan mengambil total pemasukan & pengeluaran untuk nBulan terakhir.
+func (r *KeuanganRepository) GetPemasukanPengeluaranBulanan(nBulan int) ([]BulanTotal, error) {
+	result := make([]BulanTotal, nBulan)
+	now := time.Now()
+
+	for i := nBulan - 1; i >= 0; i-- {
+		t := now.AddDate(0, -i, 0)
+		year := t.Year()
+		month := int(t.Month())
+		label := t.Format("Jan 2006")
+		idx := nBulan - 1 - i
+
+		result[idx].Label = label
+
+		var totalMasuk float64
+		r.db.QueryRow(`
+			SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI
+			WHERE status_verifikasi = 'verified'
+			  AND strftime('%Y', tanggal_donasi) = ?
+			  AND strftime('%m', tanggal_donasi) = ?
+		`, fmt.Sprintf("%04d", year), fmt.Sprintf("%02d", month)).Scan(&totalMasuk)
+		result[idx].Pemasukan = totalMasuk
+
+		var totalKeluar float64
+		r.db.QueryRow(`
+			SELECT COALESCE(SUM(nominal), 0) FROM PENGELUARAN
+			WHERE strftime('%Y', tanggal_pengeluaran) = ?
+			  AND strftime('%m', tanggal_pengeluaran) = ?
+		`, fmt.Sprintf("%04d", year), fmt.Sprintf("%02d", month)).Scan(&totalKeluar)
+		result[idx].Pengeluaran = totalKeluar
+	}
+
+	return result, nil
+}
+
+// GetCountPemasukanPending menghitung jumlah pemasukan dengan status_verifikasi = 'pending'.
+func (r *KeuanganRepository) GetCountPemasukanPending() (int, error) {
+	var count int
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM PEMASUKAN_DONASI WHERE status_verifikasi = 'pending'`,
+	).Scan(&count)
+	return count, err
+}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -39,6 +40,7 @@ type DashboardData struct {
 	PageTitle               string
 	ActivePage              string
 	Stats                   DashboardStats
+	KeuanganChart           KeuanganChartData
 	PendingJumatBerkah      []PendingJumatBerkahItem
 	RecentKas               []RecentKasItem
 	NotificationCount       int
@@ -51,6 +53,20 @@ type DashboardStats struct {
 	PendingJumatBerkah int
 	KuotaJumatBerkah   int
 	ArtikelCount       string
+}
+
+// KeuanganChartData menyimpan data chart & summary keuangan untuk dashboard.
+type KeuanganChartData struct {
+	TotalPemasukan      string
+	TotalPengeluaran    string
+	PemasukanBulanIni   string
+	PengeluaranBulanIni string
+	PendingCount        int
+	KategoriLabelsJSON  string // JSON array string untuk Chart.js
+	KategoriValuesJSON  string
+	BulanLabelsJSON     string
+	BulanPemasukanJSON  string
+	BulanPengeluaranJSON string
 }
 
 type PendingJumatBerkahItem struct {
@@ -89,8 +105,28 @@ func (h *DashboardHandler) Dashboard(c echo.Context) error {
 
 	anakAsuhCount, _ := h.anakAsuhService.Count()
 
-	keuanganStats, _ := h.keuanganService.GetStatistics()
-	kasTersedia := FormatRupiah(keuanganStats.TotalSaldo)
+	// Ambil data chart & summary keuangan
+	keuanganDash, _ := h.keuanganService.GetDashboardKeuangan()
+	kasTersedia := FormatRupiah(keuanganDash.Stats.TotalSaldo)
+
+	// Serialize slice ke JSON untuk diteruskan ke template
+	toJSONStr := func(v interface{}) string {
+		b, _ := json.Marshal(v)
+		return string(b)
+	}
+
+	keuanganChart := KeuanganChartData{
+		TotalPemasukan:       FormatRupiah(keuanganDash.Stats.TotalPemasukan),
+		TotalPengeluaran:     FormatRupiah(keuanganDash.Stats.TotalPengeluaran),
+		PemasukanBulanIni:    FormatRupiah(keuanganDash.Stats.PemasukanBulanIni),
+		PengeluaranBulanIni:  FormatRupiah(keuanganDash.Stats.PengeluaranBulanIni),
+		PendingCount:         keuanganDash.PendingCount,
+		KategoriLabelsJSON:   toJSONStr(keuanganDash.KategoriLabels),
+		KategoriValuesJSON:   toJSONStr(keuanganDash.KategoriValues),
+		BulanLabelsJSON:      toJSONStr(keuanganDash.BulanLabels),
+		BulanPemasukanJSON:   toJSONStr(keuanganDash.BulanPemasukan),
+		BulanPengeluaranJSON: toJSONStr(keuanganDash.BulanPengeluaran),
+	}
 
 	pendingCount := h.jumatBerkahService.GetPendingCount()
 	kuota := 20
@@ -169,6 +205,7 @@ func (h *DashboardHandler) Dashboard(c echo.Context) error {
 		PageTitle:               "Ringkasan Hari Ini",
 		ActivePage:              "dashboard",
 		Stats:                   stats,
+		KeuanganChart:           keuanganChart,
 		PendingJumatBerkah:      pendingJumatBerkah,
 		RecentKas:               recentKas,
 		NotificationCount:       pendingCount,

@@ -335,3 +335,76 @@ type ValidationError struct {
 func (e *ValidationError) Error() string {
 	return e.Message
 }
+
+// KeuanganDashboardData berisi semua data keuangan yang dibutuhkan oleh halaman dashboard.
+type KeuanganDashboardData struct {
+	Stats           *models.KeuanganStats
+	KategoriLabels  []string
+	KategoriValues  []float64
+	BulanLabels     []string
+	BulanPemasukan  []float64
+	BulanPengeluaran []float64
+	PendingCount    int
+}
+
+// urutan tampil kategori di chart
+var kategoriUrutan = []string{"Zakat", "Infaq", "Sedekah", "Wakaf", "Lainnya"}
+
+// GetDashboardKeuangan mengumpulkan semua data statistik keuangan untuk dashboard.
+func (s *KeuanganService) GetDashboardKeuangan() (*KeuanganDashboardData, error) {
+	stats, _ := s.GetStatistics()
+
+	// Pemasukan by kategori — pakai urutan tetap
+	rawKategori, _ := s.repo.GetPemasukanByKategori()
+	// Buat map untuk lookup cepat
+	kategoriMap := make(map[string]float64, len(rawKategori))
+	for _, kt := range rawKategori {
+		kategoriMap[kt.Kategori] = kt.Total
+	}
+
+	var kategoriLabels []string
+	var kategoriValues []float64
+	for _, k := range kategoriUrutan {
+		if v, ok := kategoriMap[k]; ok && v > 0 {
+			kategoriLabels = append(kategoriLabels, k)
+			kategoriValues = append(kategoriValues, v)
+		}
+	}
+	// Tambahkan kategori lain di luar daftar urutan (custom)
+	for _, kt := range rawKategori {
+		found := false
+		for _, k := range kategoriUrutan {
+			if kt.Kategori == k {
+				found = true
+				break
+			}
+		}
+		if !found && kt.Total > 0 {
+			kategoriLabels = append(kategoriLabels, kt.Kategori)
+			kategoriValues = append(kategoriValues, kt.Total)
+		}
+	}
+
+	// Tren bulanan 6 bulan terakhir
+	bulanan, _ := s.repo.GetPemasukanPengeluaranBulanan(6)
+	bulanLabels := make([]string, len(bulanan))
+	bulanPemasukan := make([]float64, len(bulanan))
+	bulanPengeluaran := make([]float64, len(bulanan))
+	for i, b := range bulanan {
+		bulanLabels[i] = b.Label
+		bulanPemasukan[i] = b.Pemasukan
+		bulanPengeluaran[i] = b.Pengeluaran
+	}
+
+	pendingCount, _ := s.repo.GetCountPemasukanPending()
+
+	return &KeuanganDashboardData{
+		Stats:            stats,
+		KategoriLabels:   kategoriLabels,
+		KategoriValues:   kategoriValues,
+		BulanLabels:      bulanLabels,
+		BulanPemasukan:   bulanPemasukan,
+		BulanPengeluaran: bulanPengeluaran,
+		PendingCount:     pendingCount,
+	}, nil
+}
