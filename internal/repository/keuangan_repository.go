@@ -360,10 +360,10 @@ func (r *KeuanganRepository) GetTotalPengeluaran() (float64, error) {
 }
 
 func (r *KeuanganRepository) GetTotalPemasukanByMonth(year, month int) (float64, error) {
-	query := `SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI WHERE status_verifikasi = 'verified' AND strftime('%Y', tanggal_donasi) = ? AND strftime('%m', tanggal_donasi) = ?`
+	query := `SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI WHERE status_verifikasi = 'verified' AND substr(tanggal_donasi, 1, 7) = ?`
 	var total float64
-	monthStr := fmt.Sprintf("%02d", month)
-	err := r.db.QueryRow(query, fmt.Sprintf("%d", year), monthStr).Scan(&total)
+	yearMonth := fmt.Sprintf("%04d-%02d", year, month)
+	err := r.db.QueryRow(query, yearMonth).Scan(&total)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get total pemasukan by month: %w", err)
 	}
@@ -371,10 +371,10 @@ func (r *KeuanganRepository) GetTotalPemasukanByMonth(year, month int) (float64,
 }
 
 func (r *KeuanganRepository) GetTotalPengeluaranByMonth(year, month int) (float64, error) {
-	query := `SELECT COALESCE(SUM(nominal), 0) FROM PENGELUARAN WHERE strftime('%Y', tanggal_pengeluaran) = ? AND strftime('%m', tanggal_pengeluaran) = ?`
+	query := `SELECT COALESCE(SUM(nominal), 0) FROM PENGELUARAN WHERE substr(tanggal_pengeluaran, 1, 7) = ?`
 	var total float64
-	monthStr := fmt.Sprintf("%02d", month)
-	err := r.db.QueryRow(query, fmt.Sprintf("%d", year), monthStr).Scan(&total)
+	yearMonth := fmt.Sprintf("%04d-%02d", year, month)
+	err := r.db.QueryRow(query, yearMonth).Scan(&total)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get total pengeluaran by month: %w", err)
 	}
@@ -540,11 +540,11 @@ func (r *KeuanganRepository) GetPemasukanByMonthStr(monthStr string) ([]*models.
 	query := `
 		SELECT id_pemasukan, nama_donatur, tanggal_donasi, nominal, kategori_dana, catatan, bukti_transaksi, status_verifikasi, created_at, updated_at
 		FROM PEMASUKAN_DONASI 
-		WHERE strftime('%m', tanggal_donasi) = ? AND strftime('%Y', tanggal_donasi) = ?
+		WHERE substr(tanggal_donasi, 1, 7) = ?
 		ORDER BY created_at DESC
 	`
 
-	rows, err := r.db.Query(query, month, year)
+	rows, err := r.db.Query(query, year+"-"+month)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pemasukan by month: %w", err)
 	}
@@ -644,11 +644,11 @@ func (r *KeuanganRepository) GetPengeluaranByMonthStr(monthStr string) ([]*model
 			   a.nama_lengkap
 		FROM PENGELUARAN p
 		LEFT JOIN ANAK_ASUH a ON p.id_anak = a.id_anak
-		WHERE strftime('%m', p.tanggal_pengeluaran) = ? AND strftime('%Y', p.tanggal_pengeluaran) = ?
+		WHERE substr(p.tanggal_pengeluaran, 1, 7) = ?
 		ORDER BY p.created_at DESC
 	`
 
-	rows, err := r.db.Query(query, month, year)
+	rows, err := r.db.Query(query, year+"-"+month)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pengeluaran by month: %w", err)
 	}
@@ -779,17 +779,15 @@ func (r *KeuanganRepository) GetPemasukanPengeluaranBulanan(nBulan int) ([]Bulan
 		r.db.QueryRow(`
 			SELECT COALESCE(SUM(nominal), 0) FROM PEMASUKAN_DONASI
 			WHERE status_verifikasi = 'verified'
-			  AND strftime('%Y', tanggal_donasi) = ?
-			  AND strftime('%m', tanggal_donasi) = ?
-		`, fmt.Sprintf("%04d", year), fmt.Sprintf("%02d", month)).Scan(&totalMasuk)
+			  AND substr(tanggal_donasi, 1, 7) = ?
+		`, fmt.Sprintf("%04d-%02d", year, month)).Scan(&totalMasuk)
 		result[idx].Pemasukan = totalMasuk
 
 		var totalKeluar float64
 		r.db.QueryRow(`
 			SELECT COALESCE(SUM(nominal), 0) FROM PENGELUARAN
-			WHERE strftime('%Y', tanggal_pengeluaran) = ?
-			  AND strftime('%m', tanggal_pengeluaran) = ?
-		`, fmt.Sprintf("%04d", year), fmt.Sprintf("%02d", month)).Scan(&totalKeluar)
+			WHERE substr(tanggal_pengeluaran, 1, 7) = ?
+		`, fmt.Sprintf("%04d-%02d", year, month)).Scan(&totalKeluar)
 		result[idx].Pengeluaran = totalKeluar
 	}
 
