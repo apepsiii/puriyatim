@@ -18,7 +18,7 @@ type Config struct {
 	AppName         string
 	AppVersion      string
 	AppURL          string
-	DonasiMinNominal int64
+	DonasiMinNominal int
 }
 
 type OneSenderConfig struct {
@@ -56,7 +56,7 @@ func LoadConfig() *Config {
 			ProjectSlug: getEnv("PAKASIR_PROJECT_SLUG", ""),
 			APIKey:      getEnv("PAKASIR_API_KEY", ""),
 		},
-		DonasiMinNominal: getEnvInt64("DONASI_MIN_NOMINAL", 0),
+		DonasiMinNominal: getEnvInt("DONASI_MIN_NOMINAL", 0),
 	}
 }
 
@@ -67,9 +67,9 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-func getEnvInt64(key string, defaultValue int64) int64 {
+func getEnvInt(key string, defaultValue int) int {
 	if value, exists := os.LookupEnv(key); exists {
-		if parsed, err := strconv.ParseInt(value, 10, 64); err == nil {
+		if parsed, err := strconv.Atoi(value); err == nil {
 			return parsed
 		}
 	}

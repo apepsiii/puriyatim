@@ -26,10 +26,10 @@ type PublicHandler struct {
 	artikelService     *services.ArtikelService
 	keuanganService    *services.KeuanganService
 	pengaturanService  *services.PengaturanService
-	donasiMinNominal   int64
+	donasiMinNominal   int
 }
 
-func NewPublicHandler(jumatBerkahService *services.JumatBerkahService, anakAsuhService *services.AnakAsuhService, artikelService *services.ArtikelService, keuanganService *services.KeuanganService, pengaturanService *services.PengaturanService, donasiMinNominal int64) *PublicHandler {
+func NewPublicHandler(jumatBerkahService *services.JumatBerkahService, anakAsuhService *services.AnakAsuhService, artikelService *services.ArtikelService, keuanganService *services.KeuanganService, pengaturanService *services.PengaturanService, donasiMinNominal int) *PublicHandler {
 	return &PublicHandler{
 		jumatBerkahService: jumatBerkahService,
 		anakAsuhService:    anakAsuhService,
