@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"html/template"
 	"io"
 	"log"
@@ -132,6 +133,12 @@ func main() {
 				return v.Format(time.RFC3339)
 			}
 			return ""
+		},
+		// jsStr menghasilkan JS string literal yang aman (termasuk double-quotes)
+		// Contoh: {{jsStr .QRString}} → "THIS.IS.EXAMPLE..."
+		"jsStr": func(s string) template.JS {
+			b, _ := json.Marshal(s)
+			return template.JS(b)
 		},
 	}
 

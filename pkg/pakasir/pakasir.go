@@ -141,6 +141,7 @@ func (c *Client) CreateTransaction(method, orderID string, amount int64) (*Payme
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("pakasir: gagal decode response: %w", err)
 	}
+
 	if result.Payment == nil {
 		return nil, fmt.Errorf("pakasir: response tidak valid (payment null). body: %s", string(body))
 	}

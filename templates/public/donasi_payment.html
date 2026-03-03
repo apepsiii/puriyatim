@@ -1,239 +1,282 @@
-{{template "public/base.html" .}}
-
-{{define "content"}}
+{{define "public/donasi_payment.html"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Selesaikan Pembayaran - Puri Yatim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }</style>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', primary_light: '#d1fae5', primary_dark: '#059669' } } }
+        }
+    </script>
+</head>
 {{$donasi := .Donasi}}
+<body class="flex justify-center min-h-screen">
+    <div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl overflow-x-hidden pb-6">
 
-<!-- Header tipis -->
-<section class="bg-gradient-to-br from-primary to-primary_dark text-white py-8">
-    <div class="max-w-3xl mx-auto px-4 text-center">
-        <h1 class="text-2xl md:text-3xl font-bold mb-1">Selesaikan Pembayaran</h1>
-        <p class="text-emerald-100 text-sm">Lakukan pembayaran sebelum waktu habis</p>
-    </div>
-</section>
+        <!-- Header -->
+        <header class="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white px-5 pt-6 pb-8">
+            <div class="flex items-center gap-4 mb-5">
+                <a href="/program-donasi" class="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
+                    <i class="fas fa-chevron-left text-sm"></i>
+                </a>
+                <h1 class="text-lg font-bold">Selesaikan Pembayaran</h1>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-4">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="text-xs text-emerald-200 uppercase tracking-wide">Donatur</p>
+                        <p class="font-bold text-white text-base">{{$donasi.NamaDonatur}}</p>
+                    </div>
+                    <span class="text-xs bg-white/20 text-white px-2 py-1 rounded-full capitalize">{{$donasi.Jenis}}</span>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-xs text-emerald-200">Total Bayar</p>
+                        <p class="text-2xl font-extrabold text-white">Rp {{printf "%.0f" $donasi.TotalPayment}}</p>
+                        {{if $donasi.Fee}}<p class="text-xs text-emerald-200 mt-0.5">Termasuk biaya layanan Rp {{printf "%.0f" $donasi.Fee}}</p>{{end}}
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-emerald-200">Metode</p>
+                        <p class="text-sm font-semibold text-white">{{.MethodLabel}}</p>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-<section class="py-8 bg-gray-50 min-h-screen">
-    <div class="max-w-xl mx-auto px-4">
+        <main class="px-5 pt-5 space-y-4">
 
-        {{if eq (printf "%s" $donasi.Status) "pending"}}
+            {{if eq (printf "%s" $donasi.Status) "completed"}}
+            <!-- Sudah lunas -->
+            <div class="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
+                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-check text-green-500 text-xl"></i>
+                </div>
+                <h2 class="font-bold text-gray-900 mb-1">Pembayaran Berhasil!</h2>
+                <p class="text-sm text-gray-500 mb-4">Donasi Anda telah kami terima.</p>
+                <a href="/donasi/sukses/{{$donasi.OrderID}}" class="inline-block bg-primary text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-primary_dark transition-colors">
+                    Lihat Detail
+                </a>
+            </div>
 
-        <!-- Status & Countdown -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4">
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-sm font-medium text-gray-500">Order ID</span>
-                <span class="text-sm font-mono text-gray-800 select-all">{{$donasi.OrderID}}</span>
+            {{else if or (eq (printf "%s" $donasi.Status) "expired") (eq (printf "%s" $donasi.Status) "cancelled")}}
+            <!-- Kadaluarsa / Dibatalkan -->
+            <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+                <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-times text-red-400 text-xl"></i>
+                </div>
+                <h2 class="font-bold text-gray-900 mb-1">
+                    {{if eq (printf "%s" $donasi.Status) "expired"}}Transaksi Kadaluarsa{{else}}Transaksi Dibatalkan{{end}}
+                </h2>
+                <p class="text-sm text-gray-500 mb-4">Silakan buat transaksi baru untuk berdonasi.</p>
+                <a href="/program-donasi" class="inline-block bg-primary text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-primary_dark transition-colors">
+                    Donasi Lagi
+                </a>
             </div>
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-sm font-medium text-gray-500">Donatur</span>
-                <span class="text-sm font-semibold text-gray-800">{{$donasi.NamaDonatur}}</span>
-            </div>
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-sm font-medium text-gray-500">Nominal Donasi</span>
-                <span class="text-base font-bold text-gray-900" id="nominalText">
-                    Rp {{printf "%.0f" $donasi.Nominal}}
-                </span>
-            </div>
-            {{if gt $donasi.Fee 0.0}}
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-sm font-medium text-gray-500">Biaya Layanan</span>
-                <span class="text-sm text-gray-600">Rp {{printf "%.0f" $donasi.Fee}}</span>
-            </div>
-            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-                <span class="text-sm font-semibold text-gray-700">Total Bayar</span>
-                <span class="text-lg font-bold text-primary">Rp {{printf "%.0f" $donasi.TotalPayment}}</span>
-            </div>
-            {{end}}
-        </div>
 
-        <!-- Metode + QR / VA -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4">
-            <div class="flex items-center gap-2 mb-5">
-                <i class="fas fa-credit-card text-primary"></i>
-                <span class="font-semibold text-gray-800">{{.MethodLabel}}</span>
+            {{else}}
+            <!-- Pending — tampil instruksi bayar -->
+
+            <!-- Countdown Timer -->
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-clock text-amber-500"></i>
+                    <span class="text-sm font-medium text-amber-800">Bayar sebelum</span>
+                </div>
+                <p class="text-xl font-bold text-amber-700 font-mono" id="countdown">--:--</p>
             </div>
 
             {{if .IsQRIS}}
             <!-- QRIS -->
-            <div class="text-center">
-                <p class="text-sm text-gray-500 mb-3">Scan QR code di bawah ini dengan aplikasi e-wallet atau mobile banking Anda</p>
-                <div class="inline-block bg-white border-2 border-gray-200 rounded-2xl p-4 mb-4">
-                    <div id="qrContainer" class="w-56 h-56 flex items-center justify-center mx-auto">
-                        <div class="text-center">
-                            <i class="fas fa-spinner fa-spin text-primary text-2xl mb-2"></i>
-                            <p class="text-xs text-gray-400">Memuat QR...</p>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-qrcode text-primary"></i>
+                    <p class="text-sm font-semibold text-gray-800">Scan QR Code</p>
+                </div>
+                <p class="text-xs text-gray-500 mb-4">Buka aplikasi e-wallet atau mobile banking, pilih fitur scan QR</p>
+                <div class="flex justify-center mb-4">
+                    <div id="qrContainer" class="bg-white border-2 border-gray-200 rounded-2xl p-3 inline-block">
+                        <div class="w-48 h-48 flex items-center justify-center">
+                            <i class="fas fa-spinner fa-spin text-primary text-2xl"></i>
                         </div>
                     </div>
                 </div>
-                <!-- QR string tersembunyi untuk digunakan JS -->
-                <textarea id="qrString" class="hidden">{{$donasi.QRString}}</textarea>
-                <p class="text-xs text-gray-400 mt-1">QR code berlaku hingga waktu habis</p>
+                <div class="flex items-center gap-2 justify-center bg-emerald-50 rounded-xl p-2.5">
+                    <i class="fas fa-check-circle text-emerald-500 text-xs"></i>
+                    <p class="text-xs text-emerald-700">GoPay &middot; OVO &middot; Dana &middot; ShopeePay &middot; Mobile Banking</p>
+                </div>
             </div>
             {{else if .IsVA}}
             <!-- Virtual Account -->
-            <div class="text-center">
-                <p class="text-sm text-gray-500 mb-4">Transfer ke nomor Virtual Account berikut</p>
-                <div class="bg-gray-50 rounded-xl p-5 mb-4">
-                    <p class="text-xs text-gray-400 mb-1 uppercase tracking-wide">Nomor Virtual Account</p>
-                    <p class="text-2xl font-bold font-mono tracking-widest text-gray-900 select-all" id="vaNumber">
-                        {{$donasi.VANumber}}
-                    </p>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-university text-primary"></i>
+                    <p class="text-sm font-semibold text-gray-800">Nomor Virtual Account</p>
                 </div>
-                <button onclick="copyVA()" class="text-sm text-primary font-medium hover:text-primary_dark transition-colors">
-                    <i class="fas fa-copy mr-1"></i> Salin Nomor
+                <div class="bg-gray-50 rounded-xl p-4 mb-3 text-center">
+                    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">{{.MethodLabel}}</p>
+                    <p class="text-2xl font-bold font-mono tracking-widest text-gray-900 select-all" id="vaNumber">{{$donasi.VANumber}}</p>
+                </div>
+                <button onclick="copyVA()" class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-copy text-primary"></i> Salin Nomor VA
                 </button>
-                <p class="text-xs text-gray-400 mt-3">Pastikan nominal transfer tepat: <strong>Rp {{printf "%.0f" $donasi.TotalPayment}}</strong></p>
+                <p class="text-xs text-amber-600 mt-3 text-center"><i class="fas fa-exclamation-triangle mr-1"></i>Transfer tepat <strong>Rp {{printf "%.0f" $donasi.TotalPayment}}</strong> agar terdeteksi otomatis</p>
             </div>
             {{end}}
-        </div>
 
-        <!-- Countdown Timer -->
-        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 text-center">
-            <p class="text-sm text-amber-700 mb-1"><i class="fas fa-clock mr-1"></i>Waktu tersisa</p>
-            <p class="text-3xl font-bold text-amber-800 font-mono" id="countdown">--:--</p>
-            <p class="text-xs text-amber-600 mt-1">Transaksi kadaluarsa otomatis jika tidak dibayar</p>
-        </div>
-
-        <!-- Status polling info -->
-        <div class="bg-white rounded-2xl border border-gray-100 p-4 mb-4 text-center" id="statusInfo">
-            <i class="fas fa-circle-notch fa-spin text-primary mr-2"></i>
-            <span class="text-sm text-gray-500">Menunggu konfirmasi pembayaran...</span>
-        </div>
-
-        <!-- Batal -->
-        <div class="text-center mt-2">
-            <button onclick="cancelPayment()" class="text-sm text-red-400 hover:text-red-600 transition-colors">
-                <i class="fas fa-times mr-1"></i>Batalkan Transaksi
-            </button>
-        </div>
-
-        {{else if eq (printf "%s" $donasi.Status) "completed"}}
-        <!-- Sudah completed, redirect -->
-        <div class="bg-white rounded-2xl p-8 text-center shadow-sm">
-            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-check text-green-500 text-2xl"></i>
+            <!-- Cara Bayar -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-4">
+                <button onclick="toggleCaraBayar()" class="w-full flex items-center justify-between text-left">
+                    <span class="text-sm font-semibold text-gray-800"><i class="fas fa-info-circle text-primary mr-2"></i>Cara Pembayaran</span>
+                    <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="caraIcon"></i>
+                </button>
+                <div id="caraContent" class="hidden mt-3 space-y-1.5 text-xs text-gray-600">
+                    {{if .IsQRIS}}
+                    <p>1. Buka aplikasi e-wallet atau m-banking</p>
+                    <p>2. Pilih menu <strong>Scan QR</strong> / <strong>QRIS</strong></p>
+                    <p>3. Arahkan kamera ke QR code di atas</p>
+                    <p>4. Konfirmasi nominal dan selesaikan pembayaran</p>
+                    <p>5. Status akan terverifikasi otomatis</p>
+                    {{else}}
+                    <p>1. Buka aplikasi m-banking atau pergi ke ATM</p>
+                    <p>2. Pilih <strong>Transfer</strong> &rarr; <strong>Virtual Account</strong></p>
+                    <p>3. Masukkan nomor VA di atas</p>
+                    <p>4. Pastikan nominal tepat <strong>Rp {{printf "%.0f" $donasi.TotalPayment}}</strong></p>
+                    <p>5. Konfirmasi dan selesaikan transfer</p>
+                    {{end}}
+                </div>
             </div>
-            <h2 class="text-xl font-bold text-gray-900 mb-2">Pembayaran Berhasil!</h2>
-            <p class="text-gray-500 text-sm mb-6">Donasi Anda telah kami terima. Jazakallahu khairan.</p>
-            <a href="/donasi/sukses/{{$donasi.OrderID}}" class="bg-primary text-white px-6 py-3 rounded-xl font-semibold inline-block hover:bg-primary_dark transition-colors">
-                Lihat Detail
-            </a>
-        </div>
 
-        {{else}}
-        <!-- Expired / Cancelled -->
-        <div class="bg-white rounded-2xl p-8 text-center shadow-sm">
-            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-times text-red-400 text-2xl"></i>
+            <!-- Order ID -->
+            <div class="bg-white rounded-2xl border border-gray-100 px-4 py-3 flex justify-between items-center">
+                <span class="text-xs text-gray-400">Order ID</span>
+                <span class="font-mono text-xs text-gray-600 select-all">{{$donasi.OrderID}}</span>
             </div>
-            <h2 class="text-xl font-bold text-gray-900 mb-2">
-                {{if eq (printf "%s" $donasi.Status) "expired"}}Transaksi Kadaluarsa{{else}}Transaksi Dibatalkan{{end}}
-            </h2>
-            <p class="text-gray-500 text-sm mb-6">Silakan buat transaksi baru jika ingin berdonasi.</p>
-            <a href="/program-donasi" class="bg-primary text-white px-6 py-3 rounded-xl font-semibold inline-block hover:bg-primary_dark transition-colors">
-                Donasi Lagi
-            </a>
-        </div>
-        {{end}}
 
+            <!-- Status polling indicator -->
+            <div class="text-center py-2" id="statusInfo">
+                <i class="fas fa-circle-notch fa-spin text-emerald-400 mr-2"></i>
+                <span class="text-xs text-gray-400">Menunggu konfirmasi pembayaran...</span>
+            </div>
+
+            <!-- Batal -->
+            <div class="text-center pb-4">
+                <button onclick="cancelPayment()" class="text-xs text-red-400 hover:text-red-600 transition-colors">
+                    <i class="fas fa-times mr-1"></i>Batalkan Transaksi
+                </button>
+            </div>
+
+            {{end}}
+        </main>
     </div>
-</section>
 
-<!-- QRCode.js library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>
-const ORDER_ID = "{{$donasi.OrderID}}";
+    <script>
+    const ORDER_ID = "{{$donasi.OrderID}}";
 
-{{if .IsQRIS}}
-// Render QR code dari QR string
-document.addEventListener('DOMContentLoaded', function() {
-    const qrStr = document.getElementById('qrString').value.trim();
-    const container = document.getElementById('qrContainer');
-    if (qrStr && typeof QRCode !== 'undefined') {
-        container.innerHTML = '';
-        new QRCode(container, {
-            text: qrStr,
-            width: 200,
-            height: 200,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-        });
-    }
-});
-{{end}}
-
-{{if .IsVA}}
-function copyVA() {
-    const va = document.getElementById('vaNumber').innerText.trim();
-    navigator.clipboard.writeText(va).then(() => {
-        alert('Nomor VA berhasil disalin: ' + va);
-    }).catch(() => {
-        prompt('Salin nomor VA:', va);
-    });
-}
-{{end}}
-
-// ======= Countdown Timer =======
-        {{if $donasi.ExpiredAt}}
-const expiredAt = new Date("{{isoTime $donasi.ExpiredAt}}");function updateCountdown() {
-    const now = new Date();
-    const diff = Math.floor((expiredAt - now) / 1000);
-    const el = document.getElementById('countdown');
-    if (!el) return;
-    if (diff <= 0) {
-        el.textContent = '00:00';
-        el.classList.add('text-red-600');
-        document.getElementById('statusInfo').innerHTML =
-            '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i><span class="text-sm text-red-500">Transaksi kadaluarsa. Silakan buat transaksi baru.</span>';
-        return;
-    }
-    const m = Math.floor(diff / 60).toString().padStart(2, '0');
-    const s = (diff % 60).toString().padStart(2, '0');
-    el.textContent = m + ':' + s;
-    if (diff < 300) el.classList.add('text-red-600');
-}
-updateCountdown();
-const countdownInterval = setInterval(updateCountdown, 1000);
-{{end}}
-
-// ======= Status Polling =======
-let pollCount = 0;
-const MAX_POLLS = 120; // maks 10 menit (polling setiap 5 detik)
-
-async function pollStatus() {
-    if (pollCount >= MAX_POLLS) return;
-    pollCount++;
-    try {
-        const res = await fetch('/api/donasi/status/' + ORDER_ID);
-        const data = await res.json();
-        if (!data.success) return;
-        if (data.data.status === 'completed') {
-            clearInterval(countdownInterval);
-            clearInterval(pollInterval);
-            document.getElementById('statusInfo').innerHTML =
-                '<i class="fas fa-check-circle text-green-500 mr-2"></i><span class="text-sm text-green-600 font-semibold">Pembayaran diterima! Mengarahkan...</span>';
-            setTimeout(() => {
-                window.location.href = '/donasi/sukses/' + ORDER_ID;
-            }, 1500);
-        } else if (data.data.status === 'expired') {
-            clearInterval(pollInterval);
+    {{if .IsQRIS}}
+    document.addEventListener('DOMContentLoaded', function() {
+        const qrStr = {{jsStr $donasi.QRString}};
+        const container = document.getElementById('qrContainer');
+        if (qrStr && typeof QRCode !== 'undefined') {
+            container.innerHTML = '';
+            new QRCode(container, {
+                text: qrStr,
+                width: 192,
+                height: 192,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
         }
-    } catch(e) { /* ignore */ }
-}
+    });
+    {{end}}
 
-const pollInterval = setInterval(pollStatus, 5000);
-pollStatus(); // cek langsung pertama kali
+    {{if .IsVA}}
+    function copyVA() {
+        const va = document.getElementById('vaNumber').innerText.trim();
+        navigator.clipboard.writeText(va).then(() => {
+            Swal.fire({ icon: 'success', title: 'Tersalin!', text: 'Nomor VA: ' + va, timer: 1500, showConfirmButton: false });
+        }).catch(() => { prompt('Salin nomor VA:', va); });
+    }
+    {{end}}
 
-// ======= Cancel =======
-async function cancelPayment() {
-    if (!confirm('Yakin ingin membatalkan transaksi ini?')) return;
-    try {
-        await fetch('/api/donasi/cancel', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({order_id: ORDER_ID})
+    function toggleCaraBayar() {
+        document.getElementById('caraContent').classList.toggle('hidden');
+        document.getElementById('caraIcon').classList.toggle('rotate-180');
+    }
+
+    // Countdown
+    {{if $donasi.ExpiredAt}}
+    const expiredAt = new Date("{{isoTime $donasi.ExpiredAt}}");
+    let countdownDone = false;
+    function updateCountdown() {
+        const diff = Math.floor((expiredAt - new Date()) / 1000);
+        const el = document.getElementById('countdown');
+        if (!el) return;
+        if (diff <= 0) {
+            el.textContent = '00:00';
+            if (!countdownDone) {
+                countdownDone = true;
+                document.getElementById('statusInfo').innerHTML =
+                    '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i><span class="text-xs text-red-500">Transaksi kadaluarsa.</span>';
+            }
+            return;
+        }
+        el.textContent = Math.floor(diff/60).toString().padStart(2,'0') + ':' + (diff%60).toString().padStart(2,'0');
+        if (diff < 300) el.classList.add('text-red-600');
+    }
+    updateCountdown();
+    const countdownInterval = setInterval(updateCountdown, 1000);
+    {{end}}
+
+    // Status Polling
+    let pollCount = 0;
+    async function pollStatus() {
+        if (pollCount++ > 120) return;
+        try {
+            const res = await fetch('/api/donasi/status/' + ORDER_ID);
+            const data = await res.json();
+            if (!data.success) return;
+            const s = data.data.status;
+            if (s === 'completed') {
+                clearInterval(pollInterval);
+                document.getElementById('statusInfo').innerHTML =
+                    '<i class="fas fa-check-circle text-emerald-500 mr-2"></i><span class="text-xs text-emerald-600 font-semibold">Pembayaran diterima! Mengarahkan...</span>';
+                setTimeout(() => { window.location.href = '/donasi/sukses/' + ORDER_ID; }, 1500);
+            } else if (s === 'expired' || s === 'cancelled') {
+                clearInterval(pollInterval);
+                window.location.reload();
+            }
+        } catch(e) {}
+    }
+    const pollInterval = setInterval(pollStatus, 5000);
+    pollStatus();
+
+    // Cancel
+    async function cancelPayment() {
+        const result = await Swal.fire({
+            icon: 'warning', title: 'Batalkan Transaksi?',
+            text: 'Pembayaran yang sudah dilakukan tidak dapat dikembalikan.',
+            showCancelButton: true, confirmButtonText: 'Ya, Batalkan', cancelButtonText: 'Tidak',
+            confirmButtonColor: '#ef4444', cancelButtonColor: '#10b981'
         });
-    } catch(e) {}
-    window.location.href = '/program-donasi';
-}
-</script>
+        if (!result.isConfirmed) return;
+        try {
+            await fetch('/api/donasi/cancel', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({order_id: ORDER_ID})
+            });
+        } catch(e) {}
+        window.location.href = '/program-donasi';
+    }
+    </script>
+</body>
+</html>
 {{end}}
